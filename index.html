@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knight Movement</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1 id="score-title">อัศวินห่านห้าวหาญนักล่าแต้ม</h1>
+    <div class="input-container">
+        <label for="nameInput">มีนามว่า: </label>
+        <input type="text" id="nameInput" name="name" placeholder="คนโง่จะเว้นว่าง">
+        <button id="howToPlayBtn">Whats?</button>
+    </div>
+
+    <!-- Modal -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="container">
+                <h1>อัศวินห่านห้าวหาญนักล่าแต้ม</h1>
+                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;เกมการแข่งขันล่าแต้มบนตารางหมากรุกสุดพิเศษนี้
+                    คุณเป็นห่านห้าวหาญและปราดเปรื่องผู้ปรารถนาเก็บแต้มให้ได้มากเพื่อก้าวขึ้นเป็นอันดับหนึ่งของการแข่งขัน
+                </p>
+                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;เพื่อแก้โจทย์ข้อนี้
+                    คุณจำเป็นต้องทำความรู้จักรูปแบบการเดินของหมากรุกเบื้องต้น ในที่นี้จะแนะนำการเดินของหมากที่มีในโจทย์
+                    ประกอบด้วย</p>
+                <ul>
+                        <span id="moreContent" class="hidden">
+                            <p class="highlight">อัศวิน</p>
+                            <img class="move" src="how to/knight-move.svg" alt="Knight Move">
+                            <p class="text">เดินสองช่องไปทางใดทางหนึ่งและเดินอีกหนึ่งช่องในทิศทางตั้งฉาก คล้ายกับ ‘L’
+                            </p>
+
+                            <p class="highlight">เรือ</p>
+                            <img class="move" src="how to/rook-move.svg" alt="Rook Move">
+                            <p class="text">เดินในแนวตรง (แนวตั้งหรือแนวนอน) ได้ไกลจนสุดขอบตาราง คล้ายกับ ‘+’</p>
+
+                            <p class="highlight">บิชอป</p>
+                            <img class="move" src="how to/bishop-move.svg" alt="Bishop Move">
+                            <p class="text">เดินในแนวทแยงได้ไกลจนสุดของตาราง คล้ายกับ ‘X’</p>
+                        </span>
+                    
+                </ul>
+                <a href="javascript:void(0);" id="readMore" class="read-more">ไหน ๆ?</a>
+
+
+                <h2>วิธีการเล่น</h2>
+                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ออกแบบการเดินหมากห่านห้าวหาญ (อัศวิน) เริ่มต้นที่ช่อง b2 เพื่อเก็บแต้มให้มากที่สุด แต่ละช่องจะมีผลตามประเภทและค่าของช่องนั้น ๆ โดยในทุกการเดิน คุณจะถูกหักแต้มออก 10% ของแต้มที่คุณมีอยู่ และจะนับแต้มที่คุณได้ตามแต้มสุดท้ายที่คุณมีอยู่เมื่อเข้าสู่ช่องบ่อน้ำที่สิ้นสุด</p>
+
+                <h2>ประเภทผลของช่อง</h2>
+                <ul class="square-container">
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องขุมทรัพย์.svg" alt="ช่องขุมทรัพย์">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องขุมทรัพย์</h2>
+                            <p class="yellow">คุณจะได้รับแต้มเพิ่มตามค่าที่แสดงบนช่อง</p>
+                        </div>
+                    </li>
+                
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องคำอวยพร.svg" alt="ช่องคำอวยพร">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องคำอวยพร</h2>
+                            <p class="orange">คุณจะได้รับแต้มเพิ่มร้อยละตามค่าที่แสดงของแต้มที่คุณมีอยู่</p>
+                        </div>
+                    </li>
+                
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องเขตปลอดภัย.svg" alt="ช่องเขตปลอดภัย">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องเขตปลอดภัย</h2>
+                            <p class="light-green">การเดินหมากเข้าช่องนี้ คุณจะไม่ถูกหักแต้มออก 10%</p>
+                        </div>
+                    </li>
+                
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องเกราะอัศวิน.svg" alt="ช่องเกราะอัศวิน">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องเกราะอัศวิน</h2>
+                            <p class="blue">การเดินหมากครั้งถัดไปตามค่าที่แสดง คุณจะไม่ถูกหักแต้มออก 10%</p>
+                        </div>
+                    </li>
+                
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องเวทมนตร์ทวีคูณ.svg" alt="ช่องเวทมนตร์ทวีคูณ">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องเวทมนตร์ทวีคูณ</h2>
+                            <p class="pink">หากการเดินหมากครั้งถัดเป็นช่องขุมทรัพย์ คุณจะได้แต้มเป็นจำนวนเท่าตามค่าที่แสดงของแต้มจากช่องขุมทรัพย์</p>
+                        </div>
+                    </li>
+                
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องวิญญาณนักรบ.svg" alt="ช่องวิญญาณนักรบ">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องวิญญาณนักรบ</h2>
+                            <p class="cyan">การเดินหมากครั้งถัดไปจะเป็นรูปแบบของหมากตามสัญลักษณ์ที่แสดง</p>
+                        </div>
+                    </li>
+                
+                    <li class="square-item">
+                        <img class="square" src="how to/ช่องบ่อน้ำที่สิ้นสุด.svg" alt="ช่องบ่อน้ำที่สิ้นสุด">
+                        <div class="text-container">
+                            <h2 class="highlight">ช่องบ่อน้ำที่สิ้นสุด</h2>
+                            <p class="light">เกมจะจบลงเมื่อคุณเดินหมากเข้าช่องนี้ ซึ่งคุณจะไม่ถูกหักแต้มออก 10%</p>
+                        </div>
+                    </li>
+                </ul>                
+
+                <p class="caution">(หากคุณเดินหมากเข้าช่องขุมทรัพย์หรือช่องคำอวยพร ช่องนั้น ๆ จะไม่มีผลเป็นครั้งที่สอง)</p>
+                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;คุณสามารถเดินหมากได้โดยเลือกช่องเป้าหมายหรือลากหมากของคุณไปยังช่องเป้าหมาย เมื่อเข้าช่องบ่อน้ำที่สิ้นสุดแล้ว คุณสามารถเลือกเริ่มเล่นใหม่หรือเลือกส่งคำตอบได้</p>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="chessboard" width="640" height="640"></canvas>
+
+    <div id="score-and-history-container">
+        <h3 id="score-title" class="title">แต้มที่มีอยู่:</h3>
+        <div id="score-number">0</div> <!-- Score number 0 added here -->
+        <div>
+            <span id="current-piece">หมากปัจจุบัน: อัศวิน</span>
+            <span id="shields"></span>
+            <span id="multiplier"></span>
+        </div>
+        <div id="move-history-container">
+            <h3>ประวัติการเดิน:</h3>
+            <div id="move-history">b1</div>
+        </div>
+    </div>
+    <div id="controls">
+        <button id="undo-btn">ย้อนกลับ</button>
+        <button id="reset-btn">เริ่มใหม่</button>
+        <button id="send-btn" disabled>อันนี้ล่ะ</button>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>

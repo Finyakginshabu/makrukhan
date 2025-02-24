@@ -1,0 +1,273 @@
+@import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@100..700&family=Noto+Sans+Thai:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+
+body {
+    text-align: center;
+    font-family: "Noto Sans Thai", serif;
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: auto;
+    /* Prevent scrolling */
+}
+
+h1 {
+    text-align: center;
+}
+
+.valid-move {
+    width: 50%;
+    height: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    position: absolute;
+    top: 25%;
+    left: 25%;
+    pointer-events: none;
+    /* Prevents interaction */
+}
+
+#game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+canvas {
+    background-color: white;
+    transition: all 0.3s ease;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+#score-and-history-container {
+    font-size: 21px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#score-title {
+    margin-bottom: 10px;
+}
+
+#score-number {
+    color: #f15a29;
+}
+
+#shields {
+    color: #0096df;
+}
+
+#multiplier {
+    color: #ff35df;
+}
+
+#score-number {
+    font-size: 26px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#move-history-container {
+    display: inline-block;
+    text-align: center;
+}
+
+#move-history {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 18px;
+    border: 1px solid black;
+    transform: translateY(-20px);
+    padding: 5px;
+    width: 300px;
+    text-align: center;
+    display: inline-block;
+    white-space: pre-wrap;
+}
+
+#controls {
+    transform: translateY(-20px);
+    margin-top: 10px;
+}
+
+#controls button {
+    margin-bottom: 20px;
+    margin-left: 5px;
+    margin-right: 5px;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+#undo-btn {
+    background-color: #ffffac;
+}
+
+#reset-btn {
+    background-color: #c9ffec;
+}
+
+#send-btn {
+    background-color: #ecffd4;
+}
+
+#howToPlayBtn {
+    background-color: #c9ffec;
+    margin-right: 5px;
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.input-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+#nameInput {
+    font-size: 16px;
+}
+
+#howToPlayBtn:hover {
+    background-color: #bcffc0;
+}
+
+/* Modal style */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.57);
+}
+
+.modal-content {
+    text-align: left;
+    background-color: #fffef8;
+    margin: 2.6% auto;
+    padding: 50px;
+    width: 70%;
+    max-height: 80%;
+    overflow-y: auto;
+}
+
+/* Initially hide the extra content */
+.hidden {
+    display: none;
+  }
+  
+  /* Style for the "Read more" link */
+  .read-more {
+    color: #f15a29;
+    margin-left: 45px;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  
+  /* Style for the highlighted elements */
+  .highlight {
+    font-size: 26px;
+    font-weight: bold;
+  }
+  
+  /* Style for the move image */
+  .move {
+    max-width: 43%;
+    text-align: center;
+    display: block;
+    margin: 10px auto;
+  }
+  
+  /* Style for the text paragraphs */
+  .text {
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 6%;
+  }  
+
+.move {
+    max-width: 43%;
+    text-align: center;
+    display: block;
+    margin: 10px auto;
+}
+
+h2 {
+    font-size: 30px;
+}
+
+.square-container {
+    display: flex;
+    flex-wrap: wrap; /* Allow items to wrap to the next line */
+    gap: 20px; /* Space between squares */
+    padding: 0;
+    list-style-type: none; /* Remove default list styling */
+}
+
+/* Style for each square item */
+.square-item {
+    display: flex;
+    width: calc(50% - 10px); /* Two items per row */
+    flex-direction: row;
+    align-items: center;
+}
+
+@media (min-height: 75vw) {
+    .square-item {
+        width: 100%; /* One item per row */
+    }
+}
+
+/* Style for the image */
+.square {
+    max-width: 160px;
+    height: auto;
+    margin-right: 20px; /* Space between image and text */
+}
+
+/* Style for the text container */
+.text-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+
+/* Styling for the text paragraphs */
+p {
+    margin: 0; /* Remove extra margin around the text */
+}
+
+.caution {
+    color: #f15a29;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.close {
+    color: #aaa;
+    font-size: 43px;
+    font-weight: bold;
+    cursor: pointer;
+    position: fixed;
+    top: 5%;   /* Adjust the distance from the top */
+    right: 14%; /* Adjust the distance from the right */
+}
+
+.close:hover,
+.close:focus {
+    color: #f15a29;
+    text-decoration: none;
+}

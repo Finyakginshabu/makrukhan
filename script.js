@@ -213,19 +213,21 @@ function animateKnightMove() {
     let targetX = targetPos.col * SQUARE_SIZE;
     let targetY = targetPos.row * SQUARE_SIZE;
 
-    const totalSteps = 20;
-    let currentStep = 0;
+    const duration = 300; // 🔥 Move in 300ms
+    let startTime = null; // ✅ Always reset start time
 
-    function slideKnight() {
-        if (currentStep <= totalSteps) {
-            let x = knightX + (targetX - knightX) * (currentStep / totalSteps);
-            let y = knightY + (targetY - knightY) * (currentStep / totalSteps);
+    function slideKnight(timestamp) {
+        if (!startTime) startTime = timestamp; // ✅ Set fresh timestamp every move
+        let progress = (timestamp - startTime) / duration;
+
+        if (progress < 1) {
+            let x = knightX + (targetX - knightX) * progress;
+            let y = knightY + (targetY - knightY) * progress;
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBoard();
             ctx.drawImage(knightImage, x, y, PIECE_SIZE, PIECE_SIZE);
 
-            currentStep++;
             requestAnimationFrame(slideKnight);
         } else {
             knightPos = { ...targetPos };
@@ -236,7 +238,7 @@ function animateKnightMove() {
         }
     }
 
-    slideKnight();
+    requestAnimationFrame(slideKnight);
 }
 
 canvas.addEventListener("mousedown", (event) => {
@@ -302,10 +304,13 @@ canvas.addEventListener("mousemove", (event) => {
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
 
-        let x = (event.clientX - rect.left) * scaleX / SCALE_FACTOR; // 🔥 Adjust for scale
-        let y = (event.clientY - rect.top) * scaleY / SCALE_FACTOR; // 🔥 Adjust for scale
+        let x = (event.clientX - rect.left) * scaleX / SCALE_FACTOR;
+        let y = (event.clientY - rect.top) * scaleY / SCALE_FACTOR;
 
-        ctx.drawImage(knightImage, x - PIECE_SIZE / 2, y - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
+        // 🔥 Fix: Use the correct piece image while dragging
+        let pieceImage = isRookForOneMove ? rookImage : isBishopForOneMove ? bishopImage : knightImage;
+
+        ctx.drawImage(pieceImage, x - PIECE_SIZE / 2, y - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
     }
 });
 

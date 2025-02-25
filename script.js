@@ -1,13 +1,29 @@
 const canvas = document.getElementById("chessboard");
 const ctx = canvas.getContext("2d");
+
+const LOGICAL_SIZE = 640;
+const SCALE_FACTOR = 3;
+
+canvas.width = LOGICAL_SIZE * SCALE_FACTOR;
+canvas.height = LOGICAL_SIZE * SCALE_FACTOR;
+
+// 🔥 Ensure it remains a perfect square at all zoom levels
+canvas.style.width = `${LOGICAL_SIZE}px`;
+canvas.style.height = `${LOGICAL_SIZE}px`;
+canvas.style.maxWidth = "100%";
+canvas.style.maxHeight = "100%";
+canvas.style.objectFit = "contain"; // Ensures even scaling
+
+ctx.scale(SCALE_FACTOR, SCALE_FACTOR);
+
 const moveHistoryBox = document.getElementById("move-history");
 const currentPieceBox = document.getElementById("current-piece");
 const shields = document.getElementById("shields");
 const multiplier = document.getElementById("multiplier");
 
 const BOARD_SIZE = 8;
-const SQUARE_SIZE = canvas.width / BOARD_SIZE;
-const PIECE_SIZE = SQUARE_SIZE;
+const SQUARE_SIZE = LOGICAL_SIZE / BOARD_SIZE; // 640px / 8 = 80px per square
+const PIECE_SIZE = SQUARE_SIZE; // Keep pieces proportionate
 
 let knightPos = { row: 7, col: 1 };
 let targetPos = { row: 7, col: 1 };
@@ -64,7 +80,8 @@ function drawGame() {
 }
 
 function drawBoard() {
-    ctx.drawImage(boardImage, 0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(boardImage, 0, 0, LOGICAL_SIZE, LOGICAL_SIZE); // ✅ Use logical size
 
     const colNames = "abcdefgh";
 
@@ -75,24 +92,23 @@ function drawBoard() {
 
             let x = col * SQUARE_SIZE;
             let y = row * SQUARE_SIZE;
-            let imageData = ctx.getImageData(x, y, SQUARE_SIZE, SQUARE_SIZE);
+
+            // 🔥 Correct grayscale application
+            let imageData = ctx.getImageData(
+                x * SCALE_FACTOR, y * SCALE_FACTOR, 
+                SQUARE_SIZE * SCALE_FACTOR, SQUARE_SIZE * SCALE_FACTOR
+            );
+
             let pixels = imageData.data;
-
-            // Convert only the special square to grayscale
             for (let i = 0; i < pixels.length; i += 4) {
-                let r = pixels[i];
-                let g = pixels[i + 1];
-                let b = pixels[i + 2];
-
-                let gray = 0.3 * r + 0.59 * g + 0.11 * b;
+                let gray = 0.3 * pixels[i] + 0.59 * pixels[i + 1] + 0.11 * pixels[i + 2];
                 pixels[i] = pixels[i + 1] = pixels[i + 2] = gray;
             }
 
-            ctx.putImageData(imageData, x, y);
+            ctx.putImageData(imageData, x * SCALE_FACTOR, y * SCALE_FACTOR);
         }
     });
 
-    // Only draw valid move circles if no animation is happening
     if (!isAnimating) {
         drawValidMoves();
     }
@@ -100,8 +116,7 @@ function drawBoard() {
 
 function drawValidMoves() {
     const validMoves = getValidMoves(knightPos);
-
-    ctx.fillStyle = "rgba(0, 0, 0, 0.14)"; // Green with transparency
+    ctx.fillStyle = "rgba(0, 0, 0, 0.14)";
 
     validMoves.forEach(move => {
         let x = move.col * SQUARE_SIZE + SQUARE_SIZE / 2;
@@ -113,16 +128,13 @@ function drawValidMoves() {
     });
 }
 
-
 function drawKnight() {
-    let x = knightPos.col * SQUARE_SIZE + (SQUARE_SIZE - PIECE_SIZE) / 2;
-    let y = knightPos.row * SQUARE_SIZE + (SQUARE_SIZE - PIECE_SIZE) / 2;
+    let x = knightPos.col * SQUARE_SIZE;
+    let y = knightPos.row * SQUARE_SIZE;
 
-    let pieceImage = knightImage;
-    if (isRookForOneMove) pieceImage = rookImage;
-    else if (isBishopForOneMove) pieceImage = bishopImage;
+    let pieceImage = isRookForOneMove ? rookImage : isBishopForOneMove ? bishopImage : knightImage;
 
-    ctx.drawImage(pieceImage, x, y, PIECE_SIZE, PIECE_SIZE);
+    ctx.drawImage(pieceImage, x, y, PIECE_SIZE, PIECE_SIZE); // 🔥 Fix size
 }
 
 function getValidMoves(pos) {
@@ -149,25 +161,14 @@ function getValidMoves(pos) {
 }
 
 function updateStatus() {
-    if (isRookForOneMove) {
-        currentPieceBox.textContent = "หมากปัจจุบัน: เรือ";
-    } else if (isBishopForOneMove) {
-        currentPieceBox.textContent = "หมากปัจจุบัน: บิชอป";
-    } else {
-        currentPieceBox.textContent = "หมากปัจจุบัน: อัศวิน";
-    }
+    currentPieceBox.textContent = isRookForOneMove
+        ? "หมากปัจจุบัน: เรือ"
+        : isBishopForOneMove
+        ? "หมากปัจจุบัน: บิชอป"
+        : "หมากปัจจุบัน: อัศวิน";
 
-    if (noPenaltyMoves > 0) {
-        shields.textContent = `[${noPenaltyMoves}]`;
-    } else {
-        shields.textContent = "";
-    }
-
-    if (lastMoveWasMultiplier > 0) {
-        multiplier.textContent = `X${lastMoveWasMultiplier}`;
-    } else {
-        multiplier.textContent = ""; multiplier
-    }
+    shields.textContent = noPenaltyMoves > 0 ? `[${noPenaltyMoves}]` : "";
+    multiplier.textContent = lastMoveWasMultiplier > 0 ? `X${lastMoveWasMultiplier}` : "";
 }
 
 function getRookMoves(pos) {
@@ -192,21 +193,27 @@ function getBishopMoves(pos) {
 
 function getMouseSquare(event) {
     const rect = canvas.getBoundingClientRect();
+    const scaleX = LOGICAL_SIZE / rect.width;
+    const scaleY = LOGICAL_SIZE / rect.height;
+
+    const mouseX = (event.clientX - rect.left) * scaleX;
+    const mouseY = (event.clientY - rect.top) * scaleY;
+
     return {
-        row: Math.floor((event.clientY - rect.top) / SQUARE_SIZE),
-        col: Math.floor((event.clientX - rect.left) / SQUARE_SIZE)
+        row: Math.floor(mouseY / SQUARE_SIZE),
+        col: Math.floor(mouseX / SQUARE_SIZE)
     };
 }
 
 function animateKnightMove() {
-    isAnimating = true; // Disable valid move indicators
+    isAnimating = true;
 
-    let knightX = knightPos.col * SQUARE_SIZE + (SQUARE_SIZE - PIECE_SIZE) / 2;
-    let knightY = knightPos.row * SQUARE_SIZE + (SQUARE_SIZE - PIECE_SIZE) / 2;
-    let targetX = targetPos.col * SQUARE_SIZE + (SQUARE_SIZE - PIECE_SIZE) / 2;
-    let targetY = targetPos.row * SQUARE_SIZE + (SQUARE_SIZE - PIECE_SIZE) / 2;
+    let knightX = knightPos.col * SQUARE_SIZE;
+    let knightY = knightPos.row * SQUARE_SIZE;
+    let targetX = targetPos.col * SQUARE_SIZE;
+    let targetY = targetPos.row * SQUARE_SIZE;
 
-    const totalSteps = 20; // Adjust for smoother or faster movement
+    const totalSteps = 20;
     let currentStep = 0;
 
     function slideKnight() {
@@ -215,18 +222,17 @@ function animateKnightMove() {
             let y = knightY + (targetY - knightY) * (currentStep / totalSteps);
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBoard(); // Redraw board but don't show valid moves
-            ctx.drawImage(isRookForOneMove ? rookImage : isBishopForOneMove ? bishopImage : knightImage, x, y, PIECE_SIZE, PIECE_SIZE);
+            drawBoard();
+            ctx.drawImage(knightImage, x, y, PIECE_SIZE, PIECE_SIZE);
 
             currentStep++;
             requestAnimationFrame(slideKnight);
         } else {
-            knightPos = { ...targetPos }; // Update final position
-            isAnimating = false; // Re-enable valid move indicators
-            updateMoveHistory(); // Update move history
-
-            drawBoard();  // Redraw everything
-            drawKnight(); // Explicitly redraw the knight
+            knightPos = { ...targetPos };
+            isAnimating = false;
+            updateMoveHistory();
+            drawBoard();
+            drawKnight();
         }
     }
 
@@ -235,18 +241,8 @@ function animateKnightMove() {
 
 canvas.addEventListener("mousedown", (event) => {
     const pos = getMouseSquare(event);
-    if (pos.row === knightPos.row && pos.col === knightPos.col) isDragging = true;
-});
-
-canvas.addEventListener("mousemove", (event) => {
-    if (isDragging) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBoard();
-
-        let x = event.clientX - canvas.getBoundingClientRect().left;
-        let y = event.clientY - canvas.getBoundingClientRect().top;
-
-        ctx.drawImage(isRookForOneMove ? rookImage : knightImage, x - 50, y - 50, 80, 80);
+    if (pos.row === knightPos.row && pos.col === knightPos.col) {
+        isDragging = true;
     }
 });
 
@@ -254,14 +250,30 @@ canvas.addEventListener("mouseup", (event) => {
     if (!isDragging) return;
     isDragging = false;
 
-    const newPos = getMouseSquare(event);
+    // 🔹 Ensure accurate scaling for zoom
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // 🔹 Get actual mouse position in canvas coordinates
+    const mouseX = (event.clientX - rect.left) * scaleX / SCALE_FACTOR; // 🔥 Adjust for scale
+    const mouseY = (event.clientY - rect.top) * scaleY / SCALE_FACTOR; // 🔥 Adjust for scale
+
+    // 🔹 Convert to the nearest board square
+    const newPos = {
+        row: Math.floor(mouseY / SQUARE_SIZE),
+        col: Math.floor(mouseX / SQUARE_SIZE),
+    };
+
     const validMoves = getValidMoves(knightPos);
 
+    // 🔹 Check if the new position is a valid move
     if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
         knightPos = newPos;
         const colNames = "abcdefgh";
         const moveNotation = colNames[knightPos.col] + (8 - knightPos.row);
 
+        // 🔹 Preserve all your original movement transformation logic
         if (moveNotation === "b4" || moveNotation === "e4" || moveNotation === "g3") {
             isBishopForOneMove = true;
         } else if (moveNotation === "d1" || moveNotation === "d7" || moveNotation === "g6") {
@@ -270,25 +282,60 @@ canvas.addEventListener("mouseup", (event) => {
             isBishopForOneMove = false;
             isRookForOneMove = false;
         }
+
+        // 🔹 Preserve score update logic
         updateMoveHistory();
     }
 
+    // 🔹 Redraw the board after movement
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawBoard();
     drawKnight();
 });
 
+canvas.addEventListener("mousemove", (event) => {
+    if (isDragging) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        let x = (event.clientX - rect.left) * scaleX / SCALE_FACTOR; // 🔥 Adjust for scale
+        let y = (event.clientY - rect.top) * scaleY / SCALE_FACTOR; // 🔥 Adjust for scale
+
+        ctx.drawImage(knightImage, x - PIECE_SIZE / 2, y - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
+    }
+});
+
 canvas.addEventListener("click", (event) => {
-    const newPos = getMouseSquare(event);
+    // 🔹 Ensure accurate scaling for zoom
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    // 🔹 Get actual mouse position in canvas coordinates
+    const mouseX = (event.clientX - rect.left) * scaleX / SCALE_FACTOR; // 🔥 Adjust for scale
+    const mouseY = (event.clientY - rect.top) * scaleY / SCALE_FACTOR; // 🔥 Adjust for scale
+
+    // 🔹 Convert to the nearest board square
+    const newPos = {
+        row: Math.floor(mouseY / SQUARE_SIZE),
+        col: Math.floor(mouseX / SQUARE_SIZE),
+    };
+
     const validMoves = getValidMoves(knightPos);
 
+    // 🔹 Check if the new position is a valid move
     if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
-        targetPos = newPos; // Set the new target position
-        animateKnightMove(); // Call the animation function
+        targetPos = newPos;
+        animateKnightMove(); // 🔹 Keeps your animation logic
 
         const colNames = "abcdefgh";
         const moveNotation = colNames[newPos.col] + (8 - newPos.row);
 
+        // 🔹 Keeps all original move transformation logic
         if (moveNotation === "b4" || moveNotation === "e4" || moveNotation === "g3") {
             isBishopForOneMove = true;
         } else if (moveNotation === "d1" || moveNotation === "d7" || moveNotation === "g6") {

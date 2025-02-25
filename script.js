@@ -53,12 +53,57 @@ bishopImage.src = "assets/bishop.svg";
 boardImage.src = "assets/board.svg";
 
 canvas.addEventListener("touchstart", (event) => {
-    event.preventDefault();
+    if (event.touches.length === 1) {
+        isDragging = true;
+        event.preventDefault();
+    }
 }, { passive: false });
 
 canvas.addEventListener("touchmove", (event) => {
-    event.preventDefault();
+    if (isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        let x = (event.touches[0].clientX - rect.left) * scaleX / SCALE_FACTOR;
+        let y = (event.touches[0].clientY - rect.top) * scaleY / SCALE_FACTOR;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBoard();
+
+        let pieceImage = isRookForOneMove ? rookImage : isBishopForOneMove ? bishopImage : knightImage;
+        ctx.drawImage(pieceImage, x - PIECE_SIZE / 2, y - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
+        
+        event.preventDefault();
+    }
 }, { passive: false });
+
+canvas.addEventListener("touchend", () => {
+    isDragging = false;
+});
+
+canvas.addEventListener("touchend", (event) => {
+    if (!isDragging) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const mouseX = (event.changedTouches[0].clientX - rect.left) * scaleX / SCALE_FACTOR;
+        const mouseY = (event.changedTouches[0].clientY - rect.top) * scaleY / SCALE_FACTOR;
+
+        const newPos = {
+            row: Math.floor(mouseY / SQUARE_SIZE),
+            col: Math.floor(mouseX / SQUARE_SIZE),
+        };
+
+        const validMoves = getValidMoves(knightPos);
+
+        if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
+            targetPos = newPos;
+            animateKnightMove();
+        }
+    }
+});
 
 const specialSquares = {
     "a3": { points: 100, visited: false },

@@ -83,7 +83,9 @@ canvas.addEventListener("touchend", () => {
 });
 
 canvas.addEventListener("touchend", (event) => {
-    if (!isDragging) {
+    if (isDragging) {
+        isDragging = false;
+    } else {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;

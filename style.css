@@ -12,7 +12,6 @@ body {
     align-items: center;
     height: 100vh;
     overflow: auto;
-    /* Prevent scrolling */
 }
 
 h1 {
@@ -28,7 +27,6 @@ h1 {
     top: 25%;
     left: 25%;
     pointer-events: none;
-    /* Prevents interaction */
 }
 
 #game-container {
@@ -45,14 +43,20 @@ canvas {
     max-height: 100%;
 }
 
+img, canvas {
+    user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+}
+
 #chessboard {
-    width: 640px; /* Ensures width stays fixed */
-    height: 640px; /* Ensures height stays fixed */
-    max-width: 100%; /* Prevents width from exceeding parent container */
-    max-height: 100%; /* Prevents height from growing too large */
-    aspect-ratio: 1 / 1; /* Keeps width and height equal */
+    width: 640px;
+    height: 640px;
+    max-width: 100%;
+    max-height: 100%;
+    aspect-ratio: 1 / 1;
     display: block;
-    object-fit: contain; /* Ensures board scales evenly */
+    object-fit: contain;
 }
 
 #score-and-history-container {
@@ -150,7 +154,6 @@ canvas {
     background-color: #bcffc0;
 }
 
-/* Modal style */
 .modal {
     display: none;
     position: fixed;
@@ -173,12 +176,10 @@ canvas {
     overflow-y: auto;
 }
 
-/* Initially hide the extra content */
 .hidden {
     display: none;
   }
   
-  /* Style for the "Read more" link */
   .read-more {
     color: #f15a29;
     margin-left: 45px;
@@ -186,13 +187,11 @@ canvas {
     cursor: pointer;
   }
   
-  /* Style for the highlighted elements */
   .highlight {
     font-size: 26px;
     font-weight: bold;
   }
   
-  /* Style for the move image */
   .move {
     max-width: 43%;
     text-align: center;
@@ -200,7 +199,6 @@ canvas {
     margin: 10px auto;
   }
   
-  /* Style for the text paragraphs */
   .text {
     font-size: 22px;
     text-align: center;
@@ -220,44 +218,39 @@ h2 {
 
 .square-container {
     display: flex;
-    flex-wrap: wrap; /* Allow items to wrap to the next line */
-    gap: 20px; /* Space between squares */
+    flex-wrap: wrap;
+    gap: 20px;
     padding: 0;
-    list-style-type: none; /* Remove default list styling */
+    list-style-type: none;
 }
 
-/* Style for each square item */
 .square-item {
     display: flex;
-    width: calc(50% - 10px); /* Two items per row */
+    width: calc(50% - 10px);
     flex-direction: row;
     align-items: center;
 }
 
 @media (min-height: 75vw) {
     .square-item {
-        width: 100%; /* One item per row */
+        width: 100%;
     }
 }
 
-/* Style for the image */
 .square {
     max-width: 160px;
     height: auto;
-    margin-right: 20px; /* Space between image and text */
+    margin-right: 20px;
 }
 
-/* Style for the text container */
 .text-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-
-/* Styling for the text paragraphs */
 p {
-    margin: 0; /* Remove extra margin around the text */
+    margin: 0;
 }
 
 .caution {
@@ -272,8 +265,8 @@ p {
     font-weight: bold;
     cursor: pointer;
     position: fixed;
-    top: 5%;   /* Adjust the distance from the top */
-    right: 14%; /* Adjust the distance from the right */
+    top: 5%;
+    right: 14%;
 }
 
 .close:hover,

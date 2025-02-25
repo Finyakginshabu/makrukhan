@@ -45,6 +45,16 @@ canvas {
     max-height: 100%;
 }
 
+#chessboard {
+    width: 640px; /* Ensures width stays fixed */
+    height: 640px; /* Ensures height stays fixed */
+    max-width: 100%; /* Prevents width from exceeding parent container */
+    max-height: 100%; /* Prevents height from growing too large */
+    aspect-ratio: 1 / 1; /* Keeps width and height equal */
+    display: block;
+    object-fit: contain; /* Ensures board scales evenly */
+}
+
 #score-and-history-container {
     font-size: 21px;
     display: flex;

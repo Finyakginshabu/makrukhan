@@ -43,10 +43,6 @@ canvas {
     max-height: 100%;
 }
 
-img, canvas {
-    user-select: none;
-}
-
 #chessboard {
     width: 640px;
     height: 640px;

@@ -248,13 +248,13 @@ canvas.addEventListener("mousedown", startDrag);
 canvas.addEventListener("mousemove", drag);
 canvas.addEventListener("mouseup", stopDrag);
 
-canvas.addEventListener("touchstart", startDrag);
-canvas.addEventListener("touchmove", drag);
+canvas.addEventListener("touchstart", startDrag, { passive: false });
+canvas.addEventListener("touchmove", drag, { passive: false });
 canvas.addEventListener("touchend", stopDrag);
 
 function startDrag(event) {
     event.preventDefault();
-    const pos = getMouseSquare(event);
+    let pos = getMouseSquare(event);
     if (pos.row === knightPos.row && pos.col === knightPos.col) {
         isDragging = true;
     }
@@ -278,11 +278,11 @@ function drag(event) {
     }
 
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const scaleX = LOGICAL_SIZE / rect.width;
+    const scaleY = LOGICAL_SIZE / rect.height;
 
-    let adjustedX = (x - rect.left) * scaleX / SCALE_FACTOR;
-    let adjustedY = (y - rect.top) * scaleY / SCALE_FACTOR;
+    let adjustedX = (x - rect.left) * scaleX;
+    let adjustedY = (y - rect.top) * scaleY;
 
     ctx.drawImage(knightImage, adjustedX - PIECE_SIZE / 2, adjustedY - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
 }

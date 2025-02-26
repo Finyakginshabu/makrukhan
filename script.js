@@ -244,6 +244,66 @@ function animateKnightMove() {
     requestAnimationFrame(slideKnight);
 }
 
+canvas.addEventListener("mousedown", startDrag);
+canvas.addEventListener("mousemove", drag);
+canvas.addEventListener("mouseup", stopDrag);
+
+canvas.addEventListener("touchstart", startDrag);
+canvas.addEventListener("touchmove", drag);
+canvas.addEventListener("touchend", stopDrag);
+
+function startDrag(event) {
+    event.preventDefault();
+    const pos = getMouseSquare(event);
+    if (pos.row === knightPos.row && pos.col === knightPos.col) {
+        isDragging = true;
+    }
+}
+
+function drag(event) {
+    if (!isDragging) return;
+
+    event.preventDefault();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBoard();
+
+    let x, y;
+    if (event.type.startsWith("touch")) {
+        let touch = event.touches[0];
+        x = touch.clientX;
+        y = touch.clientY;
+    } else {
+        x = event.clientX;
+        y = event.clientY;
+    }
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    let adjustedX = (x - rect.left) * scaleX / SCALE_FACTOR;
+    let adjustedY = (y - rect.top) * scaleY / SCALE_FACTOR;
+
+    ctx.drawImage(knightImage, adjustedX - PIECE_SIZE / 2, adjustedY - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
+}
+
+function stopDrag(event) {
+    if (!isDragging) return;
+    isDragging = false;
+
+    const newPos = getMouseSquare(event);
+    const validMoves = getValidMoves(knightPos);
+
+    if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
+        knightPos = newPos;
+        updateMoveHistory();
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBoard();
+    drawKnight();
+}
+
 canvas.addEventListener("mousedown", (event) => {
     const pos = getMouseSquare(event);
     if (pos.row === knightPos.row && pos.col === knightPos.col) {
@@ -408,6 +468,7 @@ function updateMoveHistory() {
 
     document.getElementById("score-number").textContent = currentScore;
 
+    lastMoveWasMultiplier = 0;
     drawBoard();
     drawKnight();
 }
@@ -424,18 +485,6 @@ document.getElementById("undo-btn").addEventListener("click", () => {
             scoreHistory.pop();
         }
 
-        currentScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1] : 0;
-
-        noPenaltyMoves = 0;
-        lastMoveWasMultiplier = 0;
-        isRookForOneMove = false;
-        isBishopForOneMove = false;
-
-        moveHistoryStack = [];
-        Object.keys(specialSquares).forEach(key => {
-            specialSquares[key].visited = false;
-        });
-
         if (moveHistory.length > 0) {
             let lastMove = moveHistory[moveHistory.length - 1];
             let colNames = "abcdefgh";
@@ -447,8 +496,87 @@ document.getElementById("undo-btn").addEventListener("click", () => {
             }
         }
 
-        moveHistoryBox.textContent = moveHistory.map(line => line.join("-")).join("\n") || "b1";
+        currentScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1] : 0;
+
+        noPenaltyMoves = 0;
+        lastMoveWasMultiplier = 0;
+        isRookForOneMove = false;
+        isBishopForOneMove = false;
+        moveHistoryStack = [];
+
+        Object.keys(specialSquares).forEach(key => {
+            specialSquares[key].visited = false;
+        });
+
+        let tempScore = 0;
+        const colNames = "abcdefgh";
+
+        scoreHistory = [];
+        moveHistory.forEach(line => {
+            line.forEach(moveNotation => {
+                let col = colNames.indexOf(moveNotation[0]);
+                let row = 8 - parseInt(moveNotation[1]);
+
+                if (["b4", "e4", "g3"].includes(moveNotation)) {
+                    isBishopForOneMove = true;
+                    isRookForOneMove = false;
+                } else if (["d1", "d7", "g6"].includes(moveNotation)) {
+                    isRookForOneMove = true;
+                    isBishopForOneMove = false;
+                } else {
+                    isBishopForOneMove = false;
+                    isRookForOneMove = false;
+                }
+
+                if (["a6", "b3", "e6", "f3", "h5"].includes(moveNotation)) {
+                    lastMoveWasMultiplier = 2;
+                } else if (["f7", "h1"].includes(moveNotation)) {
+                    lastMoveWasMultiplier = 3;
+                }
+
+                const noPenaltySquares = ["b1", "b5", "c2", "c4", "c6", "e2", "f5", "g2", "h3", "a8", "c8", "e8", "g8"];
+                if (!noPenaltySquares.includes(moveNotation) && noPenaltyMoves === 0) {
+                    tempScore = Math.round(tempScore * 0.9);
+                }
+                if (noPenaltyMoves > 0) noPenaltyMoves--;
+
+                if (["a4", "d3", "d5", "f1", "h7"].includes(moveNotation)) {
+                    noPenaltyMoves = 2;
+                } else if (["a2", "b7", "g4"].includes(moveNotation)) {
+                    noPenaltyMoves = 3;
+                }
+
+                const bonusSquares = {
+                    "a1": 1.7, "b2": 1.2, "b6": 1.3, "c7": 1.2,
+                    "e1": 1.3, "e3": 1.2, "e5": 1.3, "e7": 1.3,
+                    "g5": 1.2, "h6": 1.3
+                };
+                if (bonusSquares[moveNotation] && !specialSquares[moveNotation]?.visited) {
+                    tempScore = Math.round(tempScore * bonusSquares[moveNotation]);
+                    specialSquares[moveNotation].visited = true;
+                }
+
+                if (specialSquares[moveNotation] && !specialSquares[moveNotation].visited) {
+                    let points = specialSquares[moveNotation].points;
+
+                    if (lastMoveWasMultiplier > 0) {
+                        points *= lastMoveWasMultiplier;
+                        lastMoveWasMultiplier = 0;
+                    }
+
+                    tempScore = Math.round(tempScore + points);
+                    specialSquares[moveNotation].visited = true;
+                }
+
+                scoreHistory.push(tempScore);
+            });
+        });
+
+        currentScore = tempScore;
+
+        moveHistoryBox.textContent = moveHistory.map((line) => line.join("-")).join("\n");
         document.getElementById("score-number").textContent = currentScore;
+
         document.getElementById("send-btn").disabled = true;
 
         updateStatus();

@@ -34,6 +34,7 @@ let currentScore = 0;
 let noPenaltyMoves = 0;
 let lastMoveWasMultiplier = 0;
 let moveHistoryStack = [];
+let scoreHistory = [0];
 
 let isAnimating = false;
 
@@ -392,7 +393,7 @@ function updateMoveHistory() {
     }
 
     currentScore = Math.round(newScore);
-
+    scoreHistory.push(currentScore);
     updateStatus();
 
     if (moveHistory[moveHistory.length - 1].length === 8) {
@@ -419,93 +420,38 @@ document.getElementById("undo-btn").addEventListener("click", () => {
             moveHistory[moveHistory.length - 1].pop();
         }
 
-        knightPos = { row: 7, col: 1 };
-        currentScore = 0;
+        if (scoreHistory.length > 1) {
+            scoreHistory.pop();
+        }
+
+        currentScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1] : 0;
+
         noPenaltyMoves = 0;
         lastMoveWasMultiplier = 0;
         isRookForOneMove = false;
         isBishopForOneMove = false;
-        moveHistoryStack = [];
 
+        moveHistoryStack = [];
         Object.keys(specialSquares).forEach(key => {
             specialSquares[key].visited = false;
         });
 
-        moveHistoryBox.textContent = "b1";
-        document.getElementById("score-number").textContent = "0";
+        if (moveHistory.length > 0) {
+            let lastMove = moveHistory[moveHistory.length - 1];
+            let colNames = "abcdefgh";
+            let lastNotation = lastMove[lastMove.length - 1];
 
-        drawBoard();
-        drawKnight();
+            if (lastNotation) {
+                knightPos.col = colNames.indexOf(lastNotation[0]);
+                knightPos.row = 8 - parseInt(lastNotation[1]);
+            }
+        }
 
-        let tempScore = 0;
-        const colNames = "abcdefgh";
-
-        moveHistory.forEach(line => {
-            line.forEach(moveNotation => {
-                let col = colNames.indexOf(moveNotation[0]);
-                let row = 8 - parseInt(moveNotation[1]);
-                
-                if (["b4", "e4", "g3"].includes(moveNotation)) {
-                    isBishopForOneMove = true;
-                    isRookForOneMove = false;
-                } else if (["d1", "d7", "g6"].includes(moveNotation)) {
-                    isRookForOneMove = true;
-                    isBishopForOneMove = false;
-                } else {
-                    isBishopForOneMove = false;
-                    isRookForOneMove = false;
-                }
-
-                if (["a6", "b3", "e6", "f3", "h5"].includes(moveNotation)) {
-                    lastMoveWasMultiplier = 2;
-                } else if (["f7", "h1"].includes(moveNotation)) {
-                    lastMoveWasMultiplier = 3;
-                }
-
-                const noPenaltySquares = ["b1", "b5", "c2", "c4", "c6", "e2", "f5", "g2", "h3", "a8", "c8", "e8", "g8"];
-                if (!noPenaltySquares.includes(moveNotation) && noPenaltyMoves === 0) {
-                    tempScore = (tempScore * 0.9).toFixed(2);
-                }
-                if (noPenaltyMoves > 0) noPenaltyMoves--;
-
-                if (["a4", "d3", "d5", "f1", "h7"].includes(moveNotation)) {
-                    noPenaltyMoves = 2;
-                } else if (["a2", "b7", "g4"].includes(moveNotation)) {
-                    noPenaltyMoves = 3;
-                }
-
-                const bonusSquares = {
-                    "a1": 1.7, "b2": 1.2, "b6": 1.3, "c7": 1.2,
-                    "e1": 1.3, "e3": 1.2, "e5": 1.3, "e7": 1.3,
-                    "g5": 1.2, "h6": 1.3
-                };
-                if (bonusSquares[moveNotation] && !specialSquares[moveNotation]?.visited) {
-                    tempScore = (tempScore * bonusSquares[moveNotation]).toFixed(2);
-                    specialSquares[moveNotation].visited = true;
-                }
-
-                if (specialSquares[moveNotation] && !specialSquares[moveNotation].visited) {
-                    let points = specialSquares[moveNotation].points;
-
-                    if (lastMoveWasMultiplier > 0) {
-                        points *= lastMoveWasMultiplier;
-                        lastMoveWasMultiplier = 0;
-                    }
-
-                    tempScore = (parseFloat(tempScore) + points).toFixed(2);
-                    specialSquares[moveNotation].visited = true;
-                }
-            });
-        });
-
-        currentScore = Math.round(tempScore);
-
-        moveHistoryBox.textContent = moveHistory.map((line) => line.join("-")).join("\n");
+        moveHistoryBox.textContent = moveHistory.map(line => line.join("-")).join("\n") || "b1";
         document.getElementById("score-number").textContent = currentScore;
-
         document.getElementById("send-btn").disabled = true;
 
-        updateStatus()
+        updateStatus();
         drawBoard();
         drawKnight();
     }

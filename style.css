@@ -45,7 +45,6 @@ canvas {
 
 img, canvas {
     user-select: none;
-    -webkit-user-drag: none;
 }
 
 #chessboard {

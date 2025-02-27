@@ -222,6 +222,9 @@ function animateKnightMove() {
     const duration = 190;
     let startTime = null;
 
+    let previousRookState = isRookForOneMove;
+    let previousBishopState = isBishopForOneMove;
+
     function slideKnight(timestamp) {
         if (!startTime) startTime = timestamp;
         let progress = (timestamp - startTime) / duration;
@@ -232,12 +235,16 @@ function animateKnightMove() {
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBoard();
-            ctx.drawImage(knightImage, x, y, PIECE_SIZE, PIECE_SIZE);
+
+            let pieceImage = previousRookState ? rookImage : previousBishopState ? bishopImage : knightImage;
+            ctx.drawImage(pieceImage, x, y, PIECE_SIZE, PIECE_SIZE);
 
             requestAnimationFrame(slideKnight);
         } else {
             knightPos = { ...targetPos };
             isAnimating = false;
+
+            applyPieceChange(knightPos);
             updateMoveHistory();
             drawBoard();
             drawKnight();
@@ -322,7 +329,14 @@ function handleTouchMove(event) {
 }
 
 function handleTouchEnd(event) {
-    if (!isDragging) return;
+    if (!isDragging) {
+        event.preventDefault();
+        const touch = event.changedTouches[0];
+        const newPos = getMouseSquare(touch);
+        handleTapMove(newPos);
+        return;
+    }
+
     isDragging = false;
     event.preventDefault();
 
@@ -332,11 +346,40 @@ function handleTouchEnd(event) {
     const validMoves = getValidMoves(knightPos);
     if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
         knightPos = newPos;
+        applyPieceChange(newPos);
         updateMoveHistory();
     }
 
     drawBoard();
     drawKnight();
+}
+
+function handleTapMove(newPos) {
+    const validMoves = getValidMoves(knightPos);
+
+    if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
+        knightPos = newPos;
+        applyPieceChange(newPos);
+        updateMoveHistory();
+        drawBoard();
+        drawKnight();
+    }
+}
+
+function applyPieceChange(newPos) {
+    const colNames = "abcdefgh";
+    const moveNotation = colNames[newPos.col] + (8 - newPos.row);
+
+    if (["b4", "e4", "g3"].includes(moveNotation)) {
+        isRookForOneMove = false;
+        isBishopForOneMove = true;
+    } else if (["d1", "d7", "g6"].includes(moveNotation)) {
+        isBishopForOneMove = false;
+        isRookForOneMove = true;
+    } else {
+        isBishopForOneMove = false;
+        isRookForOneMove = false;
+    }
 }
 
 canvas.addEventListener("mousemove", (event) => {
@@ -403,7 +446,6 @@ function updateMoveHistory() {
     const noPenaltySquares = ["b1", "b5", "c2", "c4", "c6", "e2", "f5", "g2", "h3", "a8", "c8", "e8", "g8"];
     let newScore = currentScore;
 
-    // ✅ Apply penalty *only* if `noPenaltyMoves === 0`
     if (!noPenaltySquares.includes(moveNotation) && noPenaltyMoves === 0) {
         newScore *= 0.9;
     }
@@ -412,7 +454,6 @@ function updateMoveHistory() {
         noPenaltyMoves--;
     }
 
-    // ✅ Assign multipliers for future moves
     let lastMove = null;
     if (moveHistory.length > 0) {
         let lastMoveSet = moveHistory[moveHistory.length - 1];
@@ -421,7 +462,6 @@ function updateMoveHistory() {
         }
     }
 
-    // ✅ If last move was a multiplier square, apply the multiplier
     let multiplier = 1;
     if (["a6", "b3", "e6", "f3", "h5"].includes(lastMove)) {
         multiplier = 2;
@@ -447,16 +487,13 @@ function updateMoveHistory() {
         "g5": 1.2, "h6": 1.3
     };
 
-    // ✅ Apply bonus squares if they haven't been visited
     if (bonusSquares[moveNotation] && !specialSquares[moveNotation]?.visited) {
         newScore *= bonusSquares[moveNotation];
     }
 
-    // ✅ Apply special square points if not visited
     if (specialSquares[moveNotation] && !specialSquares[moveNotation].visited) {
         let points = specialSquares[moveNotation].points;
 
-        // ✅ Use multiplier based on last move
         points *= multiplier;
 
         newScore = Math.round(newScore + points);

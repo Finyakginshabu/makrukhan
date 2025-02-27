@@ -358,11 +358,8 @@ function handleTapMove(newPos) {
     const validMoves = getValidMoves(knightPos);
 
     if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
-        knightPos = newPos;
-        applyPieceChange(newPos);
-        updateMoveHistory();
-        drawBoard();
-        drawKnight();
+        targetPos = newPos;
+        animateKnightMove();
     }
 }
 
@@ -559,55 +556,51 @@ function restoreLastMoveMultiplier() {
 }
 
 document.getElementById("undo-btn").addEventListener("click", () => {
-    if (moveHistory.length > 1 || moveHistory[0].length > 1) {
+    if (moveHistory.length === 1 && moveHistory[0].length === 1) return;
 
-        let lastMoveSet = moveHistory[moveHistory.length - 1];
-        let lastMove = lastMoveSet.pop();
-        
-        if (lastMoveSet.length === 0) {
-            moveHistory.pop();
-        }
-        
-        let colNames = "abcdefgh";
-        let lastMoveNotation = moveHistory[moveHistory.length - 1].slice(-1)[0];
-        let col = colNames.indexOf(lastMoveNotation[0]);
-        let row = 8 - parseInt(lastMoveNotation[1]);
-        knightPos = { row, col };
-        
-        scoreHistory.pop();
-        currentScore = scoreHistory[scoreHistory.length - 1] || 0;
-        
-        if (specialSquares[lastMove]) {
-            specialSquares[lastMove].visited = false;
-        }
-        
-        if (["b4", "e4", "g3"].includes(lastMoveNotation)) {
-            isBishopForOneMove = true;
-            isRookForOneMove = false;
-        } else if (["d1", "d7", "g6"].includes(lastMoveNotation)) {
-            isRookForOneMove = true;
-            isBishopForOneMove = false;
-        } else {
-            isBishopForOneMove = false;
-            isRookForOneMove = false;
-        }
-        
-        restoreNoPenaltyMoves();
-        restoreLastMoveMultiplier();
-        
-        updateStatus();
-        drawBoard();
-        drawKnight();
+    let lastMoveSet = moveHistory[moveHistory.length - 1];
+    let lastMove = lastMoveSet.pop();
 
-        if (specialSquares[lastMove]) {
-            lastMoveWasMultiplier = 0;
-        }
-
-        moveHistoryBox.textContent = moveHistory.map((line, index) => {
-            return index === moveHistory.length - 1 ? line.join("-") : line.join("-") + "-";
-        }).join("\n");
-        document.getElementById("score-number").textContent = currentScore;
+    if (lastMoveSet.length === 0) {
+        moveHistory.pop();
     }
+
+    if (moveHistory.length === 0) {
+        moveHistory = [["b1"]];
+    }
+
+    let colNames = "abcdefgh";
+    let lastMoveNotation = moveHistory[moveHistory.length - 1].slice(-1)[0];
+    let col = colNames.indexOf(lastMoveNotation[0]);
+    let row = 8 - parseInt(lastMoveNotation[1]);
+    knightPos = { row, col };
+
+    if (specialSquares[lastMove]) {
+        specialSquares[lastMove].visited = false;
+        currentScore -= specialSquares[lastMove].points;
+    }
+    scoreHistory.pop();
+    currentScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1] : 0;
+
+    isBishopForOneMove = ["b4", "e4", "g3"].includes(lastMoveNotation);
+    isRookForOneMove = ["d1", "d7", "g6"].includes(lastMoveNotation);
+
+    restoreNoPenaltyMoves();
+    restoreLastMoveMultiplier();
+
+    if (moveHistoryStack.length >= 2) {
+        moveHistoryStack.pop();
+        moveHistoryStack.pop();
+    }
+
+    updateStatus();
+    drawBoard();
+    drawKnight();
+
+    moveHistoryBox.textContent = moveHistory.map((line, index) => {
+        return index === moveHistory.length - 1 ? line.join("-") : line.join("-") + "-";
+    }).join("\n");
+    document.getElementById("score-number").textContent = currentScore;
 });
 
 document.getElementById("reset-btn").addEventListener("click", () => {

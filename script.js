@@ -13,6 +13,10 @@ canvas.style.maxWidth = "100%";
 canvas.style.maxHeight = "100%";
 canvas.style.objectFit = "contain";
 
+canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+
 ctx.scale(SCALE_FACTOR, SCALE_FACTOR);
 
 const moveHistoryBox = document.getElementById("move-history");
@@ -169,7 +173,6 @@ function updateStatus() {
         : isBishopForOneMove
         ? "หมากปัจจุบัน: บิชอป"
         : "หมากปัจจุบัน: อัศวิน";
-
     shields.textContent = noPenaltyMoves > 0 ? `[${noPenaltyMoves}]` : "";
     multiplier.textContent = lastMoveWasMultiplier > 0 ? `X${lastMoveWasMultiplier}` : "";
 }
@@ -244,66 +247,6 @@ function animateKnightMove() {
     requestAnimationFrame(slideKnight);
 }
 
-canvas.addEventListener("mousedown", startDrag);
-canvas.addEventListener("mousemove", drag);
-canvas.addEventListener("mouseup", stopDrag);
-
-canvas.addEventListener("touchstart", startDrag, { passive: false });
-canvas.addEventListener("touchmove", drag, { passive: false });
-canvas.addEventListener("touchend", stopDrag);
-
-function startDrag(event) {
-    event.preventDefault();
-    let pos = getMouseSquare(event);
-    if (pos.row === knightPos.row && pos.col === knightPos.col) {
-        isDragging = true;
-    }
-}
-
-function drag(event) {
-    if (!isDragging) return;
-
-    event.preventDefault();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBoard();
-
-    let x, y;
-    if (event.type.startsWith("touch")) {
-        let touch = event.touches[0];
-        x = touch.clientX;
-        y = touch.clientY;
-    } else {
-        x = event.clientX;
-        y = event.clientY;
-    }
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = LOGICAL_SIZE / rect.width;
-    const scaleY = LOGICAL_SIZE / rect.height;
-
-    let adjustedX = (x - rect.left) * scaleX;
-    let adjustedY = (y - rect.top) * scaleY;
-
-    ctx.drawImage(knightImage, adjustedX - PIECE_SIZE / 2, adjustedY - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
-}
-
-function stopDrag(event) {
-    if (!isDragging) return;
-    isDragging = false;
-
-    const newPos = getMouseSquare(event);
-    const validMoves = getValidMoves(knightPos);
-
-    if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
-        knightPos = newPos;
-        updateMoveHistory();
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBoard();
-    drawKnight();
-}
-
 canvas.addEventListener("mousedown", (event) => {
     const pos = getMouseSquare(event);
     if (pos.row === knightPos.row && pos.col === knightPos.col) {
@@ -351,6 +294,51 @@ canvas.addEventListener("mouseup", (event) => {
     drawKnight();
 });
 
+function handleTouchStart(event) {
+    event.preventDefault();
+    const touch = event.touches[0];
+    const pos = getMouseSquare(touch);
+    if (pos.row === knightPos.row && pos.col === knightPos.col) {
+        isDragging = true;
+    }
+}
+
+function handleTouchMove(event) {
+    if (!isDragging) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
+    let x = (touch.clientX - rect.left) * scaleX / SCALE_FACTOR;
+    let y = (touch.clientY - rect.top) * scaleY / SCALE_FACTOR;
+
+    let pieceImage = isRookForOneMove ? rookImage : isBishopForOneMove ? bishopImage : knightImage;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBoard();
+    ctx.drawImage(pieceImage, x - PIECE_SIZE / 2, y - PIECE_SIZE / 2, PIECE_SIZE, PIECE_SIZE);
+}
+
+function handleTouchEnd(event) {
+    if (!isDragging) return;
+    isDragging = false;
+    event.preventDefault();
+
+    const touch = event.changedTouches[0];
+    const newPos = getMouseSquare(touch);
+
+    const validMoves = getValidMoves(knightPos);
+    if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
+        knightPos = newPos;
+        updateMoveHistory();
+    }
+
+    drawBoard();
+    drawKnight();
+}
+
 canvas.addEventListener("mousemove", (event) => {
     if (isDragging) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -388,13 +376,15 @@ canvas.addEventListener("click", (event) => {
     if (validMoves.some(move => move.row === newPos.row && move.col === newPos.col)) {
         targetPos = newPos;
         animateKnightMove();
-
+        
         const colNames = "abcdefgh";
         const moveNotation = colNames[newPos.col] + (8 - newPos.row);
 
         if (moveNotation === "b4" || moveNotation === "e4" || moveNotation === "g3") {
+            isRookForOneMove = false;
             isBishopForOneMove = true;
         } else if (moveNotation === "d1" || moveNotation === "d7" || moveNotation === "g6") {
+            isBishopForOneMove = false;
             isRookForOneMove = true;
         } else {
             isBishopForOneMove = false;
@@ -410,19 +400,40 @@ function updateMoveHistory() {
     const allowedSendPositions = ["a8", "c8", "e8", "g8"];
     document.getElementById("send-btn").disabled = !allowedSendPositions.includes(moveNotation);
 
+    const noPenaltySquares = ["b1", "b5", "c2", "c4", "c6", "e2", "f5", "g2", "h3", "a8", "c8", "e8", "g8"];
+    let newScore = currentScore;
+
+    // ✅ Apply penalty *only* if `noPenaltyMoves === 0`
+    if (!noPenaltySquares.includes(moveNotation) && noPenaltyMoves === 0) {
+        newScore *= 0.9;
+    }
+
+    if (noPenaltyMoves > 0) {
+        noPenaltyMoves--;
+    }
+
+    // ✅ Assign multipliers for future moves
+    let lastMove = null;
+    if (moveHistory.length > 0) {
+        let lastMoveSet = moveHistory[moveHistory.length - 1];
+        if (lastMoveSet.length > 0) {
+            lastMove = lastMoveSet[lastMoveSet.length - 1];
+        }
+    }
+
+    // ✅ If last move was a multiplier square, apply the multiplier
+    let multiplier = 1;
+    if (["a6", "b3", "e6", "f3", "h5"].includes(lastMove)) {
+        multiplier = 2;
+    } else if (["f7", "h1"].includes(lastMove)) {
+        multiplier = 3;
+    }
+
     if (["a6", "b3", "e6", "f3", "h5"].includes(moveNotation)) {
         lastMoveWasMultiplier = 2;
     } else if (["f7", "h1"].includes(moveNotation)) {
         lastMoveWasMultiplier = 3;
     }
-
-    const noPenaltySquares = ["b1", "b5", "c2", "c4", "c6", "e2", "f5", "g2", "h3", "a8", "c8", "e8", "g8"];
-    let newScore = currentScore;
-
-    if (!noPenaltySquares.includes(moveNotation) && noPenaltyMoves === 0) {
-        newScore = (newScore * 0.9).toFixed(2);
-    }
-    if (noPenaltyMoves > 0) noPenaltyMoves--;
 
     if (["a4", "d3", "d5", "f1", "h7"].includes(moveNotation)) {
         noPenaltyMoves = 2;
@@ -435,26 +446,31 @@ function updateMoveHistory() {
         "e1": 1.3, "e3": 1.2, "e5": 1.3, "e7": 1.3,
         "g5": 1.2, "h6": 1.3
     };
+
+    // ✅ Apply bonus squares if they haven't been visited
     if (bonusSquares[moveNotation] && !specialSquares[moveNotation]?.visited) {
-        newScore = (newScore * bonusSquares[moveNotation]).toFixed(2);
-        specialSquares[moveNotation] = { points: 0, visited: true };
+        newScore *= bonusSquares[moveNotation];
     }
 
+    // ✅ Apply special square points if not visited
     if (specialSquares[moveNotation] && !specialSquares[moveNotation].visited) {
         let points = specialSquares[moveNotation].points;
 
-        if (lastMoveWasMultiplier > 0) {
-            points *= lastMoveWasMultiplier;
-            lastMoveWasMultiplier = 0;
-        }
+        // ✅ Use multiplier based on last move
+        points *= multiplier;
 
-        newScore = (parseFloat(newScore) + points).toFixed(2);
+        newScore = Math.round(newScore + points);
         specialSquares[moveNotation].visited = true;
     }
 
     currentScore = Math.round(newScore);
     scoreHistory.push(currentScore);
+
     updateStatus();
+    lastMoveWasMultiplier = 0;
+
+    moveHistoryStack.push(noPenaltyMoves);
+    moveHistoryStack.push(lastMoveWasMultiplier);
 
     if (moveHistory[moveHistory.length - 1].length === 8) {
         moveHistory.push([moveNotation]);
@@ -468,120 +484,92 @@ function updateMoveHistory() {
 
     document.getElementById("score-number").textContent = currentScore;
 
-    lastMoveWasMultiplier = 0;
     drawBoard();
     drawKnight();
 }
 
+function restoreNoPenaltyMoves() {
+    const noPenaltySquares = {
+        "a4": 2, "d3": 2, "d5": 2, "f1": 2, "h7": 2,
+        "a2": 3, "b7": 3, "g4": 3
+    };
+    
+    noPenaltyMoves = 0;
+    
+    const lastMoves = moveHistory.flat().slice(-3);
+    
+    for (let i = lastMoves.length - 1; i >= 0; i--) {
+        let move = lastMoves[i];
+        if (noPenaltySquares[move]) {
+            noPenaltyMoves = noPenaltySquares[move] - (lastMoves.length - 1 - i);
+            break;
+        }
+    }
+    
+    if (noPenaltyMoves < 0) noPenaltyMoves = 0;
+}
+
+function restoreLastMoveMultiplier() {
+    const multiplierSquares = {
+        "a6": 2, "b3": 2, "e6": 2, "f3": 2, "h5": 2,
+        "f7": 3, "h1": 3
+    };
+    
+    const colNames = "abcdefgh";
+    let moveNotation = colNames[knightPos.col] + (8 - knightPos.row);
+    
+    lastMoveWasMultiplier = multiplierSquares[moveNotation] || 0;
+}
+
 document.getElementById("undo-btn").addEventListener("click", () => {
     if (moveHistory.length > 1 || moveHistory[0].length > 1) {
-        if (moveHistory[moveHistory.length - 1].length === 1) {
+
+        let lastMoveSet = moveHistory[moveHistory.length - 1];
+        let lastMove = lastMoveSet.pop();
+        
+        if (lastMoveSet.length === 0) {
             moveHistory.pop();
+        }
+        
+        let colNames = "abcdefgh";
+        let lastMoveNotation = moveHistory[moveHistory.length - 1].slice(-1)[0];
+        let col = colNames.indexOf(lastMoveNotation[0]);
+        let row = 8 - parseInt(lastMoveNotation[1]);
+        knightPos = { row, col };
+        
+        scoreHistory.pop();
+        currentScore = scoreHistory[scoreHistory.length - 1] || 0;
+        
+        if (specialSquares[lastMove]) {
+            specialSquares[lastMove].visited = false;
+        }
+        
+        if (["b4", "e4", "g3"].includes(lastMoveNotation)) {
+            isBishopForOneMove = true;
+            isRookForOneMove = false;
+        } else if (["d1", "d7", "g6"].includes(lastMoveNotation)) {
+            isRookForOneMove = true;
+            isBishopForOneMove = false;
         } else {
-            moveHistory[moveHistory.length - 1].pop();
+            isBishopForOneMove = false;
+            isRookForOneMove = false;
         }
-
-        if (scoreHistory.length > 1) {
-            scoreHistory.pop();
-        }
-
-        if (moveHistory.length > 0) {
-            let lastMove = moveHistory[moveHistory.length - 1];
-            let colNames = "abcdefgh";
-            let lastNotation = lastMove[lastMove.length - 1];
-
-            if (lastNotation) {
-                knightPos.col = colNames.indexOf(lastNotation[0]);
-                knightPos.row = 8 - parseInt(lastNotation[1]);
-            }
-        }
-
-        currentScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1] : 0;
-
-        noPenaltyMoves = 0;
-        lastMoveWasMultiplier = 0;
-        isRookForOneMove = false;
-        isBishopForOneMove = false;
-        moveHistoryStack = [];
-
-        Object.keys(specialSquares).forEach(key => {
-            specialSquares[key].visited = false;
-        });
-
-        let tempScore = 0;
-        const colNames = "abcdefgh";
-
-        scoreHistory = [];
-        moveHistory.forEach(line => {
-            line.forEach(moveNotation => {
-                let col = colNames.indexOf(moveNotation[0]);
-                let row = 8 - parseInt(moveNotation[1]);
-
-                if (["b4", "e4", "g3"].includes(moveNotation)) {
-                    isBishopForOneMove = true;
-                    isRookForOneMove = false;
-                } else if (["d1", "d7", "g6"].includes(moveNotation)) {
-                    isRookForOneMove = true;
-                    isBishopForOneMove = false;
-                } else {
-                    isBishopForOneMove = false;
-                    isRookForOneMove = false;
-                }
-
-                if (["a6", "b3", "e6", "f3", "h5"].includes(moveNotation)) {
-                    lastMoveWasMultiplier = 2;
-                } else if (["f7", "h1"].includes(moveNotation)) {
-                    lastMoveWasMultiplier = 3;
-                }
-
-                const noPenaltySquares = ["b1", "b5", "c2", "c4", "c6", "e2", "f5", "g2", "h3", "a8", "c8", "e8", "g8"];
-                if (!noPenaltySquares.includes(moveNotation) && noPenaltyMoves === 0) {
-                    tempScore = Math.round(tempScore * 0.9);
-                }
-                if (noPenaltyMoves > 0) noPenaltyMoves--;
-
-                if (["a4", "d3", "d5", "f1", "h7"].includes(moveNotation)) {
-                    noPenaltyMoves = 2;
-                } else if (["a2", "b7", "g4"].includes(moveNotation)) {
-                    noPenaltyMoves = 3;
-                }
-
-                const bonusSquares = {
-                    "a1": 1.7, "b2": 1.2, "b6": 1.3, "c7": 1.2,
-                    "e1": 1.3, "e3": 1.2, "e5": 1.3, "e7": 1.3,
-                    "g5": 1.2, "h6": 1.3
-                };
-                if (bonusSquares[moveNotation] && !specialSquares[moveNotation]?.visited) {
-                    tempScore = Math.round(tempScore * bonusSquares[moveNotation]);
-                    specialSquares[moveNotation].visited = true;
-                }
-
-                if (specialSquares[moveNotation] && !specialSquares[moveNotation].visited) {
-                    let points = specialSquares[moveNotation].points;
-
-                    if (lastMoveWasMultiplier > 0) {
-                        points *= lastMoveWasMultiplier;
-                        lastMoveWasMultiplier = 0;
-                    }
-
-                    tempScore = Math.round(tempScore + points);
-                    specialSquares[moveNotation].visited = true;
-                }
-
-                scoreHistory.push(tempScore);
-            });
-        });
-
-        currentScore = tempScore;
-
-        moveHistoryBox.textContent = moveHistory.map((line) => line.join("-")).join("\n");
-        document.getElementById("score-number").textContent = currentScore;
-
-        document.getElementById("send-btn").disabled = true;
-
+        
+        restoreNoPenaltyMoves();
+        restoreLastMoveMultiplier();
+        
         updateStatus();
         drawBoard();
         drawKnight();
+
+        if (specialSquares[lastMove]) {
+            lastMoveWasMultiplier = 0;
+        }
+
+        moveHistoryBox.textContent = moveHistory.map((line, index) => {
+            return index === moveHistory.length - 1 ? line.join("-") : line.join("-") + "-";
+        }).join("\n");
+        document.getElementById("score-number").textContent = currentScore;
     }
 });
 

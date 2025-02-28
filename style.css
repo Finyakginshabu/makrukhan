@@ -240,7 +240,13 @@ h2 {
 
 @media screen and (max-width: 768px) {
     body {
-        font-size: 18px;
+        font-size: 17px;
+    }
+    h1 {
+        font-size: 24px;
+    }
+    h2 {
+        font-size: 20px;
     }
     .modal-content {
         width: 90%;

@@ -607,12 +607,18 @@ document.getElementById("undo-btn").addEventListener("click", () => {
     knightPos = { row, col };
 
     if (specialSquares[lastMove]) {
-        specialSquares[lastMove].visited = false;
+        let wasVisitedBefore = moveHistory.flat().includes(lastMove);
+        if (!wasVisitedBefore) {
+            specialSquares[lastMove].visited = false;
+        }
         currentScore -= specialSquares[lastMove].points;
     }
 
     if (bonusSquares[lastMove]) {
-        bonusSquares[lastMove].visited = false;
+        let wasVisitedBefore = moveHistory.flat().includes(lastMove);
+        if (!wasVisitedBefore) {
+            bonusSquares[lastMove].visited = false;
+        }
         currentScore /= bonusSquares[lastMove].multiplier;
     }
 
@@ -639,6 +645,7 @@ document.getElementById("undo-btn").addEventListener("click", () => {
     }).join("\n");
     document.getElementById("score-number").textContent = currentScore;
 });
+
 
 document.getElementById("reset-btn").addEventListener("click", () => {
     knightPos = { row: 7, col: 1 };

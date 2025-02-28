@@ -80,6 +80,19 @@ const specialSquares = {
     "h8": { points: 600, visited: false },
 };
 
+const bonusSquares = {
+    "a1": { multiplier: 1.7, visited: false },
+    "b2": { multiplier: 1.2, visited: false },
+    "b6": { multiplier: 1.3, visited: false },
+    "c7": { multiplier: 1.2, visited: false },
+    "e1": { multiplier: 1.3, visited: false },
+    "e3": { multiplier: 1.2, visited: false },
+    "e5": { multiplier: 1.3, visited: false },
+    "e7": { multiplier: 1.3, visited: false },
+    "g5": { multiplier: 1.2, visited: false },
+    "h6": { multiplier: 1.3, visited: false }
+};
+
 boardImage.onload = knightImage.onload = rookImage.onload = bishopImage.onload = function () {
     drawGame();
 };
@@ -117,6 +130,29 @@ function drawBoard() {
             ctx.putImageData(imageData, x * SCALE_FACTOR, y * SCALE_FACTOR);
         }
     });
+
+    Object.keys(bonusSquares).forEach(square => {
+        if (bonusSquares[square].visited) {
+            let col = colNames.indexOf(square[0]);
+            let row = 8 - parseInt(square[1]);
+    
+            let x = col * SQUARE_SIZE;
+            let y = row * SQUARE_SIZE;
+    
+            let imageData = ctx.getImageData(
+                x * SCALE_FACTOR, y * SCALE_FACTOR, 
+                SQUARE_SIZE * SCALE_FACTOR, SQUARE_SIZE * SCALE_FACTOR
+            );
+    
+            let pixels = imageData.data;
+            for (let i = 0; i < pixels.length; i += 4) {
+                let gray = 0.3 * pixels[i] + 0.59 * pixels[i + 1] + 0.11 * pixels[i + 2];
+                pixels[i] = pixels[i + 1] = pixels[i + 2] = gray;
+            }
+    
+            ctx.putImageData(imageData, x * SCALE_FACTOR, y * SCALE_FACTOR);
+        }
+    });    
 
     if (!isAnimating) {
         drawValidMoves();
@@ -478,15 +514,10 @@ function updateMoveHistory() {
         noPenaltyMoves = 3;
     }
 
-    const bonusSquares = {
-        "a1": 1.7, "b2": 1.2, "b6": 1.3, "c7": 1.2,
-        "e1": 1.3, "e3": 1.2, "e5": 1.3, "e7": 1.3,
-        "g5": 1.2, "h6": 1.3
-    };
-
-    if (bonusSquares[moveNotation] && !specialSquares[moveNotation]?.visited) {
-        newScore *= bonusSquares[moveNotation];
-    }
+    if (bonusSquares[moveNotation] && !bonusSquares[moveNotation].visited) {
+        newScore *= bonusSquares[moveNotation]?.multiplier || 1;
+        bonusSquares[moveNotation].visited = true;
+    }     
 
     if (specialSquares[moveNotation] && !specialSquares[moveNotation].visited) {
         let points = specialSquares[moveNotation].points;
@@ -579,6 +610,12 @@ document.getElementById("undo-btn").addEventListener("click", () => {
         specialSquares[lastMove].visited = false;
         currentScore -= specialSquares[lastMove].points;
     }
+
+    if (bonusSquares[lastMove]) {
+        bonusSquares[lastMove].visited = false;
+        currentScore /= bonusSquares[lastMove].multiplier;
+    }
+
     scoreHistory.pop();
     currentScore = scoreHistory.length > 0 ? scoreHistory[scoreHistory.length - 1] : 0;
 
@@ -615,6 +652,10 @@ document.getElementById("reset-btn").addEventListener("click", () => {
 
     Object.keys(specialSquares).forEach(key => {
         specialSquares[key].visited = false;
+    });
+
+    Object.keys(bonusSquares).forEach(key => {
+        bonusSquares[key].visited = false;
     });
 
     moveHistoryBox.textContent = "b1";

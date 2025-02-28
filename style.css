@@ -238,6 +238,19 @@ h2 {
     }
 }
 
+@media screen and (max-width: 768px) {
+    body {
+        font-size: 18px;
+    }
+    .modal-content {
+        width: 90%;
+        padding: 30px;
+    }
+    #controls {
+        flex-direction: column;
+    }
+}
+
 .square {
     max-width: 160px;
     height: auto;

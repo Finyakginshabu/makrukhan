@@ -646,7 +646,6 @@ document.getElementById("undo-btn").addEventListener("click", () => {
     document.getElementById("score-number").textContent = currentScore;
 });
 
-
 document.getElementById("reset-btn").addEventListener("click", () => {
     knightPos = { row: 7, col: 1 };
     moveHistory = [["b1"]];
@@ -665,12 +664,14 @@ document.getElementById("reset-btn").addEventListener("click", () => {
         bonusSquares[key].visited = false;
     });
 
-    moveHistoryBox.textContent = "b1";
-    document.getElementById("score-number").textContent = "0";
+    scoreHistory = [0];
+    updateStatus();
 
-    document.getElementById("send-btn").disabled = true;
+    moveHistoryBox.textContent = moveHistory.map((line, index) => {
+        return index === moveHistory.length - 1 ? line.join("-") : line.join("-") + "-";
+    }).join("\n");
+    document.getElementById("score-number").textContent = currentScore;
 
-    updateStatus()
     drawBoard();
     drawKnight();
 });
@@ -730,3 +731,4 @@ document.getElementById("readMore").onclick = function() {
     }
   };
   
+

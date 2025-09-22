@@ -730,5 +730,3 @@ document.getElementById("readMore").onclick = function() {
       readMoreLink.textContent = "ไหน ๆ?";
     }
   };
-  
-

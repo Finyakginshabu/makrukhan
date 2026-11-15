@@ -142,7 +142,11 @@ const GameRules = (() => {
         };
     }
 
-    return { BOARD_SIZE, START_SQUARE, toSquare, toPos, getValidMoves, simulate };
+    return {
+        BOARD_SIZE, START_SQUARE, PENALTY,
+        END_SQUARES, SAFE_SQUARES, SHIELD_SQUARES, MULTIPLIER_SQUARES, TREASURE_SQUARES, BLESSING_SQUARES,
+        toSquare, toPos, getValidMoves, simulate,
+    };
 })();
 
 if (typeof module !== "undefined") module.exports = GameRules;

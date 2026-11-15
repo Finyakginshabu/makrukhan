@@ -16,6 +16,7 @@ import GameRules from "../js/rules.js";
 const MAX_NAME_LENGTH = 50;
 const MAX_MOVES = 200;
 const DEFAULT_NAME = "He doesn't want to tell";
+const EMBED_COLOR = 0xff7f1a; // the game's orange (--accent in css/style.css)
 
 export default {
     async fetch(request, env) {
@@ -56,17 +57,11 @@ export default {
             return reply(422, "Illegal or unfinished game", cors);
         }
 
-        const content = [
-            cleanName(body.name),
-            "Score: " + result.score,
-            "Moves: " + [GameRules.START_SQUARE, ...moves].join("-"),
-        ].join("\n");
-
         const discord = await fetch(env.DISCORD_WEBHOOK_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             // parse: [] stops @everyone, @here, user and role pings.
-            body: JSON.stringify({ content, allowed_mentions: { parse: [] } }),
+            body: JSON.stringify({ embeds: [scoreEmbed(body.name, result.score, moves)], allowed_mentions: { parse: [] } }),
         });
         if (!discord.ok) {
             return reply(502, "Discord rejected the message", cors);
@@ -76,16 +71,31 @@ export default {
     },
 };
 
-// One line, no markdown, limited length, so a name can't fake the score line.
+// A Discord embed card: the name as the title, score and move count side by
+// side, and the route in a code block. The route is space-separated, the format
+// the game's replay box takes, so it can be copied straight back in.
+function scoreEmbed(rawName, score, moves) {
+    return {
+        title: "🪿 " + cleanName(rawName),
+        color: EMBED_COLOR,
+        fields: [
+            { name: "Score", value: score.toLocaleString("en-US"), inline: true },
+            { name: "Moves", value: String(moves.length), inline: true },
+            // Squares were checked by simulate(), so they can't break the code block.
+            { name: "Route", value: "```\n" + [GameRules.START_SQUARE, ...moves].join(" ") + "\n```" },
+        ],
+        timestamp: new Date().toISOString(),
+    };
+}
+
+// One line, limited length. The name only ever fills the embed's title, which
+// Discord shows as plain text, so it can't pose as the score or route.
 function cleanName(raw) {
     const name = String(raw ?? "")
         .replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, " ")
         .trim();
     if (!name) return DEFAULT_NAME;
-    return Array.from(name)
-        .slice(0, MAX_NAME_LENGTH)
-        .join("")
-        .replace(/[\\`*_~|>#[\]()-]/g, "\\$&");
+    return Array.from(name).slice(0, MAX_NAME_LENGTH).join("");
 }
 
 function allowedOrigins(env) {

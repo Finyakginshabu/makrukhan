@@ -7,6 +7,7 @@ const I18N = {
         "title": "อัศวินห่านห้าวหาญนักล่าแต้ม",
         "tagline": "เริ่มที่ช่อง b1 เก็บแต้มให้ได้มากที่สุด แล้วไปจบที่ช่องบ่อน้ำที่สิ้นสุด",
         "lang.label": "ภาษา",
+        "prefs.label": "ภาษาและธีม",
         "theme.toDark": "เปลี่ยนเป็นโหมดมืด",
         "theme.toLight": "เปลี่ยนเป็นโหมดสว่าง",
         "help.open": "เล่นยังไง?",
@@ -22,9 +23,23 @@ const I18N = {
         "mult.chip": "ทวีคูณ ×{n}",
         "end.chip": "จบเกมแล้ว!",
         "history.title": "ประวัติการเดิน",
+        "history.copy": "คัดลอกการเดิน",
+        "history.copied": "คัดลอกแล้ว!",
+        "replay.title": "เล่นซ้ำเส้นทาง",
+        "replay.placeholder": "วางลำดับการเดิน เช่น b1 a3 b5 …",
+        "replay.play": "เล่น",
+        "replay.pause": "หยุดชั่วคราว",
+        "replay.start": "กลับไปจุดเริ่มต้น",
+        "replay.back": "ย้อนหนึ่งตา",
+        "replay.forward": "ไปข้างหน้าหนึ่งตา",
+        "replay.end": "ข้ามไปตาสุดท้าย",
+        "replay.speed": "ความเร็ว",
+        "replay.empty": "วางเส้นทางก่อน เช่น “b1 a3 b5”",
+        "replay.invalid": "ตาที่ {n} ({square}) เดินไม่ได้",
+        "replay.progress": "ตาที่ {n} จาก {total}",
+        "replay.done": "จบแล้ว: ได้ {score} แต้มใน {total} ตา",
 
         "name.label": "มีนามว่า",
-        "name.placeholder": "คนโง่จะเว้นว่าง",
         "undo": "ย้อนกลับ",
         "reset": "เริ่มใหม่",
         "send": "อันนี้ล่ะ",
@@ -64,6 +79,7 @@ const I18N = {
         "title": "Makrukhan",
         "tagline": "Start on b1, collect as many points as you can, and finish on a Final Pond.",
         "lang.label": "Language",
+        "prefs.label": "Language and theme",
         "theme.toDark": "Switch to dark mode",
         "theme.toLight": "Switch to light mode",
         "help.open": "How to play?",
@@ -79,9 +95,23 @@ const I18N = {
         "mult.chip": "Multiplier ×{n}",
         "end.chip": "Game over!",
         "history.title": "Move history",
+        "history.copy": "Copy moves",
+        "history.copied": "Copied!",
+        "replay.title": "Replay a route",
+        "replay.placeholder": "Paste moves, e.g. b1 a3 b5 …",
+        "replay.play": "Play",
+        "replay.pause": "Pause",
+        "replay.start": "Back to start",
+        "replay.back": "Previous move",
+        "replay.forward": "Next move",
+        "replay.end": "Jump to end",
+        "replay.speed": "Replay speed",
+        "replay.empty": "Paste a route first, like “b1 a3 b5”.",
+        "replay.invalid": "Move {n} ({square}) isn't a legal move.",
+        "replay.progress": "Move {n} of {total}",
+        "replay.done": "Finished: {score} points in {total} moves.",
 
         "name.label": "Name",
-        "name.placeholder": "Only fools leave this blank",
         "undo": "Undo",
         "reset": "Reset",
         "send": "This one!",
@@ -196,6 +226,32 @@ themeButton.addEventListener("click", () => {
 
 document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+});
+
+// ---------- ☰ menu (narrow toolbar) ----------
+// Opening it swaps the name field for language, theme and help (css/style.css).
+
+const toolbar = document.querySelector(".toolbar");
+const prefsButton = document.getElementById("prefs-btn");
+const prefsIcon = document.getElementById("prefs-icon");
+
+function setPrefsOpen(open) {
+    toolbar.classList.toggle("menu-open", open);
+    prefsButton.setAttribute("aria-expanded", String(open));
+    prefsIcon.textContent = open ? "close" : "menu";
+}
+
+prefsButton.addEventListener("click", () => setPrefsOpen(!toolbar.classList.contains("menu-open")));
+
+// Closes on a click or tap outside the toolbar, or on Escape.
+document.addEventListener("pointerdown", (event) => {
+    if (!toolbar.contains(event.target)) setPrefsOpen(false);
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && toolbar.classList.contains("menu-open")) {
+        setPrefsOpen(false);
+        prefsButton.focus();
+    }
 });
 
 applyTranslations();

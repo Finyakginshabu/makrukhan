@@ -1,0 +1,3 @@
+# Cloudflare wrangler cache and build output
+.wrangler/
+node_modules/

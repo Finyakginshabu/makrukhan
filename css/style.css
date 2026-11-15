@@ -1,0 +1,895 @@
+/* ---------- Theme tokens ---------- */
+
+/* Light: neutral black and white. Dark: navy. Both use the same orange. */
+:root {
+    color-scheme: light;
+    --bg: #f5f5f5;
+    --surface: #ffffff;
+    --surface-2: #f0f0f0;
+    --border: #dddddd;
+    --text: #111111;
+    --text-muted: #666666;
+    --brand: #111111;
+    --accent: #ff7f1a;
+    --accent-strong: #ff7f1a;
+    --on-accent: #000;
+    --shield: #0077b6;
+    --shield-bg: #e2f2fc;
+    --mult: #c41aa8;
+    --mult-bg: #fce6f8;
+    --positive: #1d7f3a;
+    --negative: #c0392b;
+    --banner-bg: #fff1e6;
+    --end-chip-fg: #000;
+    --end-chip-bg: var(--accent);
+    --backdrop: rgb(0 0 0 / 0.5);
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 10px 30px rgb(0 0 0 / 0.08);
+
+    /* Bevel for cards, secondary buttons and inputs (same style as the
+       perspective-crop project): lighter top & bottom edges, darker sides,
+       a soft inner glow and a small drop shadow. */
+    --edge-hi: color-mix(in srgb, var(--border) 55%, #fff);
+    --edge-lo: color-mix(in srgb, var(--border) 85%, #000);
+    --glow: inset 0 0 18px rgb(255 255 255 / 0.6);
+    --shadow-card: 0 2px 8px rgb(0 0 0 / 0.08);
+    --shadow-btn: 0 1px 3px rgb(0 0 0 / 0.12);
+    --hover: color-mix(in srgb, var(--surface) 95%, #000);
+
+    /* Primary button: bright orange with black text. */
+    --primary: #ff7f1a;
+    --primary-disabled: #ffd6b8;
+    --on-primary-disabled: rgb(0 0 0 / 0.45);
+
+    /* Fluid radii: ≈12px / 10px on phones up to 20px / 16px on desktop.
+       Squircle corners look less round, so they get a ×1.8 multiplier
+       (see the @supports block below). */
+    --r-card: clamp(12px, 0.5rem + 1vw, 20px);
+    --r-btn: clamp(10px, 0.375rem + 0.85vw, 16px);
+    --corner-k: 1;
+    --radius: calc(var(--r-card) * var(--corner-k));
+    --radius-btn: calc(var(--r-btn) * var(--corner-k));
+    --radius-inner: calc(var(--r-card) * 0.3);
+
+    --font: "Noto Sans Thai", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+:root[data-theme="dark"] {
+    /* Navy palette from the perspective-crop project. */
+    color-scheme: dark;
+    --bg: #001733;
+    --surface: #001C40;
+    --surface-2: #0b2a52;
+    --border: #1f3d63;
+    --text: #e8eef7;
+    --text-muted: #93a6c2;
+    --brand: #e8eef7;
+    --shield: #5cc2ff;
+    --shield-bg: #0b3358;
+    --mult: #ff74e8;
+    --mult-bg: #3a1745;
+    --positive: #57d483;
+    --negative: #ff8577;
+    --banner-bg: color-mix(in srgb, var(--surface) 85%, var(--accent));
+    --end-chip-fg: var(--accent);
+    --end-chip-bg: var(--banner-bg);
+    --backdrop: rgb(0 10 24 / 0.8);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    --edge-hi: color-mix(in srgb, var(--border) 82%, #fff);
+    --edge-lo: color-mix(in srgb, var(--border) 65%, #000);
+    --glow: inset 0 0 18px rgb(255 255 255 / 0.12);
+    --shadow-card: 0 2px 8px rgb(0 0 0 / 0.3);
+    --shadow-btn: 0 1px 3px rgb(0 0 0 / 0.35);
+    --hover: color-mix(in srgb, var(--surface) 88%, #fff);
+
+    --primary-disabled: #7f4e2d;
+    --on-primary-disabled: rgb(0 0 0 / 0.6);
+}
+
+/* Squircle corners where supported (Chrome/Edge 139+); others keep circular corners. */
+@supports (corner-shape: squircle) {
+    :root {
+        --corner-k: 1.8;
+    }
+
+    .panel,
+    .help,
+    .btn,
+    .icon-btn,
+    .segmented,
+    .field input {
+        corner-shape: squircle;
+    }
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+body:has(dialog[open]) {
+    overflow: hidden;
+}
+
+h1, h2, h3, p {
+    margin: 0;
+}
+
+img {
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Small uppercase headings and labels inside cards. */
+.label,
+.section-title {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn,
+.icon-btn {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-color: var(--edge-hi) var(--edge-lo);
+    border-radius: var(--radius-btn);
+    box-shadow: var(--glow), var(--shadow-btn);
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background-color 0.12s, border-color 0.12s;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* The text font reserves room for Thai marks above and below the letters,
+   which puts the label's visual centre off its box centre. Trimming the box
+   to the letters lines the label up with the icon. */
+.btn:has(.icon) > span:not(.icon) {
+    text-box: trim-both cap alphabetic;
+}
+
+/* Icons: Material Symbols Rounded from Google Fonts (see <head>). Each icon
+   is a ligature, e.g. <span class="icon">undo</span>. */
+.icon {
+    font-family: "Material Symbols Rounded";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    flex-shrink: 0;
+    font-feature-settings: "liga";
+    -webkit-font-smoothing: antialiased;
+    font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+    user-select: none;
+}
+
+/* Hover only lightens (or, in light mode, shades) the fill; the bevel stays. */
+.btn:hover:not(:disabled),
+.icon-btn:hover {
+    background: var(--hover);
+}
+
+/* Neutral focus ring on secondary buttons; orange is for the primary one. */
+.btn:not(.btn-primary):focus-visible,
+.icon-btn:focus-visible {
+    outline-color: color-mix(in srgb, var(--text) 70%, transparent);
+    outline-offset: 3px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 17px;
+    color: #000;
+    background: var(--primary);
+    border-color:
+        color-mix(in srgb, var(--primary) 55%, #fff)
+        color-mix(in srgb, var(--primary) 70%, #000);
+    box-shadow: inset 0 0 10px rgb(255 255 255 / 0.4), var(--shadow-btn);
+}
+
+/* Darker orange on hover, darker again while pressed. */
+.btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 88%, #000);
+}
+
+.btn-primary:active:not(:disabled) {
+    background: color-mix(in srgb, var(--primary) 76%, #000);
+}
+
+.btn-primary:focus-visible {
+    outline-offset: 3px;
+}
+
+/* Disabled: flat dark orange, no glow, no bevel, no fade. */
+.btn-primary:disabled {
+    opacity: 1;
+    color: var(--on-primary-disabled);
+    background: var(--primary-disabled);
+    border-color: var(--primary-disabled);
+    box-shadow: none;
+}
+
+/* Holds a label in every language (see data-i18n-fixed in ui.js). */
+.fixed-label {
+    display: inline-grid;
+}
+
+.fixed-label > span {
+    grid-area: 1 / 1;
+}
+
+:root[lang="th"] .fixed-label > :not([lang="th"]),
+:root[lang="en"] .fixed-label > :not([lang="en"]) {
+    visibility: hidden;
+}
+
+.icon-btn {
+    display: inline-grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+}
+
+/* Theme button shows the mode it switches to. */
+:root[data-theme="dark"] .icon-moon,
+:root:not([data-theme="dark"]) .icon-sun {
+    display: none;
+}
+
+/* Language switch: a bevelled button with the active language highlighted. */
+.segmented {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-color: var(--edge-hi) var(--edge-lo);
+    border-radius: var(--radius-btn);
+    box-shadow: var(--glow), var(--shadow-btn);
+}
+
+.segmented button {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    min-width: 44px;
+    padding: 4px 10px;
+    color: var(--text-muted);
+    background: transparent;
+    border: 0;
+    border-radius: calc(var(--radius-btn) - 4px);
+    cursor: pointer;
+}
+
+.segmented button:hover {
+    color: var(--text);
+}
+
+.segmented button[aria-pressed="true"] {
+    color: var(--text);
+    background: var(--surface-2);
+}
+
+/* 44px minimum tap target on touch screens. */
+@media (pointer: coarse) {
+    .btn {
+        min-height: 44px;
+    }
+
+    .icon-btn {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* ---------- Page layout ----------
+   Phones:   title, toolbar, board and panel stacked.
+   Tablets:  title and toolbar share a row, board and panel below.
+   Desktops: board on the left filling the screen height, with a slim title
+             bar above it; panel on the right, as tall as the screen, with the
+             toolbar as its header strip. */
+
+.app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+        "brand"
+        "toolbar"
+        "board"
+        "panel";
+    gap: 12px;
+    max-width: 752px;
+    margin: 0 auto;
+    padding: 12px 16px 24px;
+}
+
+.brand-bar {
+    grid-area: brand;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.brand-icon {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    min-width: 0;
+}
+
+h1 {
+    font-size: clamp(20px, 4vw, 26px);
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--brand);
+}
+
+.tagline {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.toolbar {
+    grid-area: toolbar;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar .btn {
+    margin-left: auto;
+}
+
+.board-wrap {
+    grid-area: board;
+    justify-self: center;
+    /* Fit the viewport height on short screens, but never shrink below 300px. */
+    width: min(100%, 720px, max(300px, calc(100svh - 160px)));
+}
+
+#chessboard {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    /* Let pointer events drive dragging instead of the page scrolling. */
+    touch-action: none;
+    user-select: none;
+}
+
+.panel {
+    grid-area: panel;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-color: var(--edge-hi) var(--edge-lo);
+    border-radius: var(--radius);
+    box-shadow: var(--glow), var(--shadow-card);
+    overflow: hidden;
+}
+
+@media (min-width: 600px) {
+    .app {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "brand toolbar"
+            "board board"
+            "panel panel";
+        gap: 16px 12px;
+        padding: 16px 16px 32px;
+    }
+}
+
+@media (min-width: 920px) {
+    :root {
+        --pad: 16px;
+        --pad-bottom: 40px;
+        --gap: 32px;
+        --topbar: 92px;
+        --panel: clamp(320px, 28vw, 500px);
+        --board: clamp(420px,
+                min(calc(100svh - var(--pad) - var(--pad-bottom) - var(--topbar)),
+                    calc(100vw - 2 * var(--pad) - var(--gap) - var(--panel))),
+                1100px);
+    }
+
+    .app {
+        grid-template-columns: var(--board) var(--panel);
+        grid-template-rows: var(--topbar) var(--board);
+        grid-template-areas:
+            "brand toolbar"
+            "board panel";
+        gap: 0 var(--gap);
+        width: fit-content;
+        max-width: none;
+        padding: var(--pad) var(--pad) var(--pad-bottom);
+    }
+
+    /* The title row: brand over the board, toolbar over the panel. */
+    .brand-bar,
+    .toolbar {
+        padding-bottom: 16px;
+    }
+
+    .brand-bar {
+        gap: 14px;
+    }
+
+    /* Fills the title row's height (92px minus its 16px bottom gap). */
+    .brand-icon {
+        width: 76px;
+        height: 76px;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    .tagline {
+        font-size: 16px;
+    }
+
+    .board-wrap {
+        width: var(--board);
+    }
+
+    /* Exactly as tall as the board. */
+    .panel {
+        height: var(--board);
+        overflow-y: auto;
+    }
+
+    .history-section {
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .history {
+        flex: 1 1 auto;
+        min-height: 34px;
+    }
+}
+
+/* Stacked layout: the panel has no fixed height, so cap the list instead. */
+@media (max-width: 919px) {
+    .history {
+        max-height: 168px;
+    }
+}
+
+/* ---------- Panel contents ---------- */
+
+.panel-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+}
+
+.panel-section + .panel-section {
+    border-top: 1px solid var(--border);
+}
+
+.section-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.score-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.score {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+#score-number {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+}
+
+.delta {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.delta.up {
+    color: var(--positive);
+}
+
+.delta.down {
+    color: var(--negative);
+}
+
+.piece {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: right;
+}
+
+.piece img {
+    width: 54px;
+    height: 54px;
+    order: 1;
+}
+
+.piece-name {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+/* Space is always reserved for one row of chips, so the score section keeps
+   the same height whether or not a chip is showing. */
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 24px;
+}
+
+.chip {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20px;
+    padding: 2px 10px;
+    border-radius: 999px;
+}
+
+.chip-shield {
+    color: var(--shield);
+    background: var(--shield-bg);
+}
+
+.chip-mult {
+    color: var(--mult);
+    background: var(--mult-bg);
+}
+
+/* Light: solid orange with black text (orange text on white is hard to read).
+   Dark: orange text on a faint orange tint. */
+.chip-end {
+    color: var(--end-chip-fg);
+    background: var(--end-chip-bg);
+}
+
+.history {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 4px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 14px;
+}
+
+.history li {
+    padding: 1px 7px;
+    background: var(--surface-2);
+    border-radius: 6px;
+}
+
+.history li:last-child {
+    color: var(--on-accent);
+    background: var(--accent-strong);
+}
+
+.panel-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* Desktop: Undo and Reset side by side, "This one!" full width below. */
+.action-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.action-bar .btn-primary {
+    grid-column: 1 / -1;
+}
+
+/* Phones and tablets: the three buttons become a bar fixed to the bottom of
+   the screen, always in reach while playing. */
+@media (max-width: 919px) {
+    .action-bar {
+        position: fixed;
+        inset: auto 0 0;
+        z-index: 10;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        /* Content stays as wide as the board (720px) on tablets. */
+        padding: 10px max(16px, calc((100% - 720px) / 2)) calc(10px + env(safe-area-inset-bottom));
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -4px 16px rgb(0 0 0 / 0.18);
+    }
+
+    .action-bar .btn {
+        min-height: 48px;
+        padding: 8px 6px;
+        font-size: 15px;
+    }
+
+    .action-bar .btn-primary {
+        grid-column: auto;
+    }
+
+    /* Keep the end of the page clear of the bar. */
+    .app {
+        padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    }
+
+    /* On short or wide screens the board is sized by height: leave room for
+       the header above it and the bar below it. */
+    .board-wrap {
+        width: min(100%, 720px, max(300px, calc(100svh - 230px - env(safe-area-inset-bottom))));
+    }
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.field input {
+    font: inherit;
+    font-size: 16px;
+    padding: 8px 12px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-color: var(--edge-hi) var(--edge-lo);
+    border-radius: var(--radius-btn);
+    box-shadow: var(--glow);
+}
+
+.field input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.8;
+}
+
+/* No outer ring; focus shows as a coloured border instead. */
+.field input:focus {
+    outline: none;
+    border-color: var(--brand);
+}
+
+.send-status {
+    margin-top: -4px;
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+.send-status:empty {
+    display: none;
+}
+
+/* ---------- Help dialog ---------- */
+
+.help {
+    width: min(780px, calc(100vw - 32px));
+    max-height: calc(100svh - 48px);
+    padding: 0;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-color: var(--edge-hi) var(--edge-lo);
+    border-radius: var(--radius);
+    box-shadow: var(--glow), var(--shadow);
+    overflow: auto;
+}
+
+.help::backdrop {
+    background: var(--backdrop);
+}
+
+.help-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.help-head h2 {
+    font-size: 20px;
+    color: var(--brand);
+}
+
+.help-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+}
+
+.help-body h3 {
+    margin-top: 12px;
+    font-size: 18px;
+}
+
+.pieces summary {
+    display: inline-block;
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.pieces summary::-webkit-details-marker {
+    display: none;
+}
+
+.piece-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.piece-grid figure {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0;
+    padding: 12px;
+    background: var(--surface-2);
+    border-radius: var(--radius-inner);
+}
+
+.piece-grid img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.piece-grid figcaption,
+.square-grid li > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 14px;
+}
+
+.piece-grid strong,
+.square-grid strong {
+    font-size: 16px;
+}
+
+.square-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.square-grid li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px;
+    background: var(--surface-2);
+    border-radius: var(--radius-inner);
+}
+
+.square-grid img {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: 8px;
+}
+
+.caution {
+    padding: 10px 14px;
+    color: var(--accent);
+    background: var(--banner-bg);
+    border-radius: var(--radius-inner);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 599px) {
+    .tagline {
+        display: none;
+    }
+
+    #score-number {
+        font-size: 38px;
+    }
+
+    .help-body {
+        padding: 16px;
+    }
+
+    .piece-grid figure {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .piece-grid img {
+        width: 110px;
+        flex-shrink: 0;
+    }
+}

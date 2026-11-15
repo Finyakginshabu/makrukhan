@@ -1,0 +1,21 @@
+name = "makrukhan-submit"
+main = "index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+preview_urls = false
+
+# The webhook URL is a secret, never stored in this file:
+#   npx wrangler secret put DISCORD_WEBHOOK_URL
+
+[vars]
+# Comma-separated list of sites allowed to submit. Change it if the game is hosted elsewhere.
+ALLOWED_ORIGINS = "https://finyakginshabu.github.io"
+
+# At most 5 submissions per IP per minute.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 5
+  period = 60

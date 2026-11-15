@@ -1,144 +1,175 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Knight Movement</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Makrukhan</title>
+    <meta name="color-scheme" content="dark light">
+    <script>
+        // Apply the player's saved language and theme before first paint, so
+        // the page doesn't flash. Defaults: English, dark.
+        (function () {
+            var root = document.documentElement, theme = null, lang = null;
+            try { theme = localStorage.getItem("theme"); lang = localStorage.getItem("lang"); } catch (e) {}
+            root.dataset.theme = theme === "light" ? "light" : "dark";
+            root.lang = lang === "th" ? "th" : "en";
+        })();
+    </script>
+    <link rel="icon" href="assets/pieces/knight.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap">
+    <!-- Icons: Material Symbols, only the ones used (names must stay in alphabetical order). -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=close,dark_mode,light_mode,restart_alt,send,undo&display=block">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
+    <div class="app">
+        <header class="brand-bar">
+            <img class="brand-icon" src="assets/pieces/knight.svg" alt="">
+            <div class="brand-text">
+                <h1 data-i18n="title">Makrukhan</h1>
+                <p class="tagline" data-i18n="tagline"></p>
+            </div>
+        </header>
 
-    <h1 id="score-title">อัศวินห่านห้าวหาญนักล่าแต้ม</h1>
-    <div class="input-container">
-        <label for="nameInput">มีนามว่า: </label>
-        <input type="text" id="nameInput" name="name" placeholder="คนโง่จะเว้นว่าง">
-        <button id="howToPlayBtn">เล่นยังไง?</button>
+        <div class="toolbar">
+            <div class="segmented" role="group" data-i18n-aria-label="lang.label">
+                <button type="button" data-lang="th">ไทย</button>
+                <button type="button" data-lang="en">EN</button>
+            </div>
+            <button type="button" id="theme-toggle" class="icon-btn">
+                <span class="icon icon-moon" aria-hidden="true">dark_mode</span>
+                <span class="icon icon-sun" aria-hidden="true">light_mode</span>
+            </button>
+            <button type="button" id="help-btn" class="btn fixed-label" data-i18n-fixed="help.open">How to play?</button>
+        </div>
+
+        <div class="board-wrap">
+            <canvas id="chessboard" role="img" data-i18n-aria-label="board.label"></canvas>
+        </div>
+
+        <aside class="panel">
+            <section class="panel-section">
+                <div class="score-row">
+                    <div>
+                        <div class="label" data-i18n="score.label"></div>
+                        <div class="score">
+                            <span id="score-number">0</span>
+                            <span id="score-delta" class="delta" hidden></span>
+                        </div>
+                    </div>
+                    <div class="piece">
+                        <img id="piece-icon" src="assets/pieces/knight.svg" alt="">
+                        <div>
+                            <div class="label" data-i18n="piece.label"></div>
+                            <div id="piece-name" class="piece-name"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chips">
+                    <span id="shield-chip" class="chip chip-shield" hidden></span>
+                    <span id="mult-chip" class="chip chip-mult" hidden></span>
+                    <span id="end-chip" class="chip chip-end" hidden></span>
+                </div>
+            </section>
+
+            <section class="panel-section history-section">
+                <h2 class="section-title" data-i18n="history.title"></h2>
+                <ol id="move-history" class="history"></ol>
+            </section>
+
+            <footer class="panel-footer">
+                <label class="field">
+                    <span class="label" data-i18n="name.label"></span>
+                    <input type="text" id="nameInput" maxlength="50" autocomplete="nickname"
+                        data-i18n-placeholder="name.placeholder">
+                </label>
+                <!-- In the panel on desktop; a bar fixed to the bottom of the screen on phones and tablets. -->
+                <div class="action-bar">
+                    <button type="button" id="undo-btn" class="btn">
+                        <span class="icon" aria-hidden="true">undo</span>
+                        <span data-i18n="undo"></span>
+                    </button>
+                    <button type="button" id="reset-btn" class="btn">
+                        <span class="icon" aria-hidden="true">restart_alt</span>
+                        <span data-i18n="reset"></span>
+                    </button>
+                    <button type="button" id="send-btn" class="btn btn-primary" disabled>
+                        <span class="icon" aria-hidden="true">send</span>
+                        <span data-i18n="send"></span>
+                    </button>
+                </div>
+                <p id="send-status" class="send-status" aria-live="polite"></p>
+            </footer>
+        </aside>
     </div>
 
-    <div id="myModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <div class="container">
-                <h1>อัศวินห่านห้าวหาญนักล่าแต้ม</h1>
-                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;เกมการแข่งขันล่าแต้มบนตารางหมากรุกสุดพิเศษนี้
-                    คุณเป็นห่านห้าวหาญและปราดเปรื่องผู้ปรารถนาเก็บแต้มให้ได้มากเพื่อก้าวขึ้นเป็นอันดับหนึ่งของการแข่งขัน
-                </p>
-                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;เพื่อแก้โจทย์ข้อนี้
-                    คุณจำเป็นต้องทำความรู้จักรูปแบบการเดินของหมากรุกเบื้องต้น ในที่นี้จะแนะนำการเดินของหมากที่มีในโจทย์
-                    ประกอบด้วย</p>
-                <ul>
-                        <span id="moreContent" class="hidden">
-                            <p class="highlight">อัศวิน</p>
-                            <img class="move" src="how to/knight-move.svg" alt="Knight Move">
-                            <p class="text">เดินสองช่องไปทางใดทางหนึ่งและเดินอีกหนึ่งช่องในทิศทางตั้งฉาก คล้ายกับ ‘L’
-                            </p>
+    <dialog id="help" class="help" aria-labelledby="help-title">
+        <div class="help-inner">
+            <header class="help-head">
+                <h2 id="help-title" data-i18n="title"></h2>
+                <button type="button" id="help-close" class="icon-btn" data-i18n-aria-label="help.close">
+                    <span class="icon" aria-hidden="true">close</span>
+                </button>
+            </header>
 
-                            <p class="highlight">เรือ</p>
-                            <img class="move" src="how to/rook-move.svg" alt="Rook Move">
-                            <p class="text">เดินในแนวตรง (แนวตั้งหรือแนวนอน) ได้ไกลจนสุดขอบตาราง คล้ายกับ ‘+’</p>
+            <div class="help-body">
+                <p data-i18n="help.intro1"></p>
+                <p data-i18n="help.intro2"></p>
 
-                            <p class="highlight">บิชอป</p>
-                            <img class="move" src="how to/bishop-move.svg" alt="Bishop Move">
-                            <p class="text">เดินในแนวทแยงได้ไกลจนสุดของตาราง คล้ายกับ ‘X’</p>
-                        </span>
-                    
+                <details class="pieces">
+                    <summary data-i18n="help.pieces"></summary>
+                    <div class="piece-grid">
+                        <figure>
+                            <img src="assets/help/knight-move.svg" alt="">
+                            <figcaption>
+                                <strong data-i18n="piece.knight"></strong>
+                                <span data-i18n="help.knight"></span>
+                            </figcaption>
+                        </figure>
+                        <figure>
+                            <img src="assets/help/rook-move.svg" alt="">
+                            <figcaption>
+                                <strong data-i18n="piece.rook"></strong>
+                                <span data-i18n="help.rook"></span>
+                            </figcaption>
+                        </figure>
+                        <figure>
+                            <img src="assets/help/bishop-move.svg" alt="">
+                            <figcaption>
+                                <strong data-i18n="piece.bishop"></strong>
+                                <span data-i18n="help.bishop"></span>
+                            </figcaption>
+                        </figure>
+                    </div>
+                </details>
+
+                <h3 data-i18n="help.howTitle"></h3>
+                <p data-i18n="help.howBody"></p>
+
+                <h3 data-i18n="help.squaresTitle"></h3>
+                <ul class="square-grid">
+                    <li><img src="assets/squares/treasure.svg" alt=""><div><strong data-i18n="sq.treasure"></strong><span data-i18n="sq.treasure.desc"></span></div></li>
+                    <li><img src="assets/squares/blessing.svg" alt=""><div><strong data-i18n="sq.blessing"></strong><span data-i18n="sq.blessing.desc"></span></div></li>
+                    <li><img src="assets/squares/safe.svg" alt=""><div><strong data-i18n="sq.safe"></strong><span data-i18n="sq.safe.desc"></span></div></li>
+                    <li><img src="assets/squares/armour.svg" alt=""><div><strong data-i18n="sq.armour"></strong><span data-i18n="sq.armour.desc"></span></div></li>
+                    <li><img src="assets/squares/multiplier.svg" alt=""><div><strong data-i18n="sq.multiplier"></strong><span data-i18n="sq.multiplier.desc"></span></div></li>
+                    <li><img src="assets/squares/spirit.svg" alt=""><div><strong data-i18n="sq.spirit"></strong><span data-i18n="sq.spirit.desc"></span></div></li>
+                    <li><img src="assets/squares/pond.svg" alt=""><div><strong data-i18n="sq.pond"></strong><span data-i18n="sq.pond.desc"></span></div></li>
                 </ul>
-                <a href="javascript:void(0);" id="readMore" class="read-more">ไหน ๆ?</a>
 
-
-                <h2>วิธีการเล่น</h2>
-                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ออกแบบการเดินหมากห่านห้าวหาญ (อัศวิน) เริ่มต้นที่ช่อง b2 เพื่อเก็บแต้มให้มากที่สุด แต่ละช่องจะมีผลตามประเภทและค่าของช่องนั้น ๆ โดยในทุกการเดิน คุณจะถูกหักแต้มออก 10% ของแต้มที่คุณมีอยู่ และจะนับแต้มที่คุณได้ตามแต้มสุดท้ายที่คุณมีอยู่เมื่อเข้าสู่ช่องบ่อน้ำที่สิ้นสุด</p>
-
-                <h2>ประเภทผลของช่อง</h2>
-                <ul class="square-container">
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องขุมทรัพย์.svg" alt="ช่องขุมทรัพย์">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องขุมทรัพย์</h2>
-                            <p class="yellow">คุณจะได้รับแต้มเพิ่มตามค่าที่แสดงบนช่อง</p>
-                        </div>
-                    </li>
-                
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องคำอวยพร.svg" alt="ช่องคำอวยพร">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องคำอวยพร</h2>
-                            <p class="orange">คุณจะได้รับแต้มเพิ่มร้อยละตามค่าที่แสดงของแต้มที่คุณมีอยู่</p>
-                        </div>
-                    </li>
-                
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องเขตปลอดภัย.svg" alt="ช่องเขตปลอดภัย">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องเขตปลอดภัย</h2>
-                            <p class="light-green">การเดินหมากเข้าช่องนี้ คุณจะไม่ถูกหักแต้มออก 10%</p>
-                        </div>
-                    </li>
-                
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องเกราะอัศวิน.svg" alt="ช่องเกราะอัศวิน">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องเกราะอัศวิน</h2>
-                            <p class="blue">การเดินหมากครั้งถัดไปตามค่าที่แสดง คุณจะไม่ถูกหักแต้มออก 10%</p>
-                        </div>
-                    </li>
-                
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องเวทมนตร์ทวีคูณ.svg" alt="ช่องเวทมนตร์ทวีคูณ">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องเวทมนตร์ทวีคูณ</h2>
-                            <p class="pink">หากการเดินหมากครั้งถัดเป็นช่องขุมทรัพย์ คุณจะได้แต้มเป็นจำนวนเท่าตามค่าที่แสดงของแต้มจากช่องขุมทรัพย์</p>
-                        </div>
-                    </li>
-                
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องวิญญาณนักรบ.svg" alt="ช่องวิญญาณนักรบ">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องวิญญาณนักรบ</h2>
-                            <p class="cyan">การเดินหมากครั้งถัดไปจะเป็นรูปแบบของหมากตามสัญลักษณ์ที่แสดง</p>
-                        </div>
-                    </li>
-                
-                    <li class="square-item">
-                        <img class="square" src="how to/ช่องบ่อน้ำที่สิ้นสุด.svg" alt="ช่องบ่อน้ำที่สิ้นสุด">
-                        <div class="text-container">
-                            <h2 class="highlight">ช่องบ่อน้ำที่สิ้นสุด</h2>
-                            <p class="light">เกมจะจบลงเมื่อคุณเดินหมากเข้าช่องนี้ ซึ่งคุณจะไม่ถูกหักแต้มออก 10%</p>
-                        </div>
-                    </li>
-                </ul>                
-
-                <p class="caution">(หากคุณเดินหมากเข้าช่องขุมทรัพย์หรือช่องคำอวยพร ช่องนั้น ๆ จะไม่มีผลเป็นครั้งที่สอง)</p>
-                <p> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;คุณสามารถเดินหมากได้โดยเลือกช่องเป้าหมายหรือลากหมากของคุณไปยังช่องเป้าหมาย เมื่อเข้าช่องบ่อน้ำที่สิ้นสุดแล้ว คุณสามารถเลือกเริ่มเล่นใหม่หรือเลือกส่งคำตอบได้</p>
+                <p class="caution" data-i18n="help.caution"></p>
+                <p data-i18n="help.controls"></p>
             </div>
         </div>
-    </div>
+    </dialog>
 
-    <canvas id="chessboard" width="640" height="640"></canvas>
-
-    <div id="score-and-history-container">
-        <h3 id="score-title" class="title">แต้มที่มีอยู่:</h3>
-        <div id="score-number">0</div>
-        <div>
-            <span id="current-piece">หมากปัจจุบัน: อัศวิน</span>
-            <span id="shields"></span>
-            <span id="multiplier"></span>
-        </div>
-        <div id="move-history-container">
-            <h3>ประวัติการเดิน:</h3>
-            <div id="move-history">b1</div>
-        </div>
-    </div>
-    <div id="controls">
-        <button id="undo-btn">ย้อนกลับ</button>
-        <button id="reset-btn">เริ่มใหม่</button>
-        <button id="send-btn" disabled>อันนี้ล่ะ</button>
-    </div>
-
-    <script src="script.js"></script>
-
+    <script src="js/rules.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
 </body>
 
 </html>

@@ -25,6 +25,8 @@ const el = {
     multChip: document.getElementById("mult-chip"),
     endChip: document.getElementById("end-chip"),
     history: document.getElementById("move-history"),
+    copy: document.getElementById("copy-btn"),
+    copyIcon: document.getElementById("copy-icon"),
     undo: document.getElementById("undo-btn"),
     reset: document.getElementById("reset-btn"),
     name: document.getElementById("nameInput"),
@@ -220,6 +222,10 @@ function updateUI() {
     }));
     el.history.scrollTop = el.history.scrollHeight;
 
+    el.copyIcon.textContent = copied ? "check" : "content_copy";
+    el.copy.title = t(copied ? "history.copied" : "history.copy");
+    el.copy.setAttribute("aria-label", el.copy.title);
+
     el.undo.disabled = history.length === 1;
     el.reset.disabled = history.length === 1;
 
@@ -303,14 +309,45 @@ el.reset.addEventListener("click", () => {
     setHistory([START_SQUARE]);
 });
 
+// ---------- Copy the move history ----------
+
+let copied = false; // shows a tick on the copy button for a moment
+let copiedTimer = 0;
+
+// Copies the moves as "b1 a3 b5 …", the format the replay box takes.
+el.copy.addEventListener("click", async () => {
+    const text = history.join(" ");
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch {
+        // Older browsers, or a page not served over https.
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.append(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+    }
+
+    copied = true;
+    updateUI();
+    clearTimeout(copiedTimer);
+    copiedTimer = setTimeout(() => {
+        copied = false;
+        updateUI();
+    }, 1500);
+});
+
 // ---------- Replay a pasted route ----------
 
 // A loaded route can be played, paused and stepped through like a video. The
 // board always shows the route's first `index` moves.
 
-const REPLAY_STEP_MS = 500; // time from one move to the next at 1×
+const REPLAY_STEP_MS = 800; // time from one move to the next at 1×
 const REPLAY_SLIDE_MS = 280; // slide time per move at 1×
-const REPLAY_SPEEDS = [0.5, 1, 2, 4];
+const REPLAY_SPEEDS = [0.5, 1, 2];
 
 let replay = null; // { moves, text, index, playing, timer } while a route is loaded
 let replaySpeed = 1;
@@ -443,8 +480,8 @@ el.replayInput.addEventListener("keydown", (event) => {
     }
 });
 
-// Pasting a route plays it straight away.
-el.replayInput.addEventListener("paste", () => setTimeout(() => loadRoute() && play()));
+// Pasting a route loads it, ready to play or step through.
+el.replayInput.addEventListener("paste", () => setTimeout(loadRoute));
 
 // Ctrl/Cmd+Z undoes a move, unless the player is typing.
 document.addEventListener("keydown", (event) => {

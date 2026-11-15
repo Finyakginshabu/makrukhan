@@ -542,6 +542,25 @@ h1 {
     font-weight: 700;
 }
 
+/* A section title with a small button at the far end. */
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* Negative margins keep the title row as tall as a plain title. */
+.icon-btn-sm {
+    width: 32px;
+    height: 32px;
+    margin-block: -6px;
+}
+
+.icon-btn-sm .icon {
+    font-size: 18px;
+}
+
 .score-row {
     display: flex;
     align-items: flex-end;

@@ -101,7 +101,7 @@
     .icon-btn,
     .segmented,
     .field input,
-    .replay-row input {
+    .replay-input {
         corner-shape: squircle;
     }
 }
@@ -727,7 +727,7 @@ h1 {
 }
 
 .field input,
-.replay-row input {
+.replay-input {
     font: inherit;
     font-size: 16px;
     padding: 8px 12px;
@@ -740,32 +740,72 @@ h1 {
 }
 
 .field input::placeholder,
-.replay-row input::placeholder {
+.replay-input::placeholder {
     color: var(--text-muted);
     opacity: 0.8;
 }
 
 /* No outer ring; focus shows as a coloured border instead. */
 .field input:focus,
-.replay-row input:focus {
+.replay-input:focus {
     outline: none;
     border-color: var(--brand);
 }
 
-.replay-row {
-    display: flex;
-    gap: 8px;
-}
+/* ---------- Replay ----------
+   Every control has a fixed size and the status line always keeps its height,
+   so nothing moves while a route plays. */
 
-.replay-row input {
-    flex: 1 1 auto;
+.replay-input {
+    width: 100%;
     min-width: 0;
     font-family: var(--mono);
     font-size: 14px;
 }
 
-.replay-row .btn {
-    flex: none;
+.replay-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* The step buttons share the row's width; the speed button keeps its own. */
+.replay-controls .icon-btn {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+}
+
+.replay-controls .icon-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.replay-controls .icon-btn:disabled:hover {
+    background: var(--surface);
+}
+
+.replay-play {
+    color: var(--accent);
+}
+
+.replay-controls .replay-speed {
+    flex: 0 0 56px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* One line, always: long messages are cut with "…" rather than wrapping. */
+.replay-status {
+    height: 21px;
+    line-height: 21px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--text-muted);
+    font-size: 14px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
 }
 
 .send-status {

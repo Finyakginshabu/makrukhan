@@ -31,9 +31,13 @@ const el = {
     send: document.getElementById("send-btn"),
     sendStatus: document.getElementById("send-status"),
     replayInput: document.getElementById("replay-input"),
-    replayBtn: document.getElementById("replay-btn"),
-    replayIcon: document.getElementById("replay-icon"),
-    replayLabel: document.getElementById("replay-label"),
+    replayStart: document.getElementById("replay-start"),
+    replayBack: document.getElementById("replay-back"),
+    replayPlay: document.getElementById("replay-play"),
+    replayPlayIcon: document.getElementById("replay-play-icon"),
+    replayForward: document.getElementById("replay-forward"),
+    replayEnd: document.getElementById("replay-end"),
+    replaySpeed: document.getElementById("replay-speed"),
     replayStatus: document.getElementById("replay-status"),
 };
 
@@ -223,6 +227,8 @@ function updateUI() {
     el.sendStatus.textContent = !state.ended ? t("send.hint")
         : sendState === "idle" ? t("send.ready")
         : t("send." + sendState);
+
+    updateReplayUI(); // its status shows the score at the end
 }
 
 // ---------- Input (mouse, touch and pen) ----------
@@ -242,7 +248,7 @@ function pointerSquare(event) {
 
 canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
-    stopReplay(); // the player takes over from a replay where it is
+    unloadReplay(); // the player takes over from a replay where it is
     finishAnimation(); // a new tap lands the previous move first
 
     const pos = pointerSquare(event);
@@ -283,7 +289,7 @@ canvas.addEventListener("pointercancel", () => {
 // ---------- Buttons ----------
 
 function undo() {
-    stopReplay();
+    unloadReplay();
     finishAnimation();
     if (history.length === 1) return;
     setHistory(history.slice(0, -1));
@@ -292,18 +298,23 @@ function undo() {
 el.undo.addEventListener("click", undo);
 
 el.reset.addEventListener("click", () => {
-    stopReplay();
+    unloadReplay();
     finishAnimation();
     setHistory([START_SQUARE]);
 });
 
 // ---------- Replay a pasted route ----------
 
-const REPLAY_SLIDE_MS = 280; // slide time per move
-const REPLAY_STEP_MS = 500; // time from one move to the next
+// A loaded route can be played, paused and stepped through like a video. The
+// board always shows the route's first `index` moves.
 
-let replay = null; // { moves, index, timer } while a route is playing
-let replayMessage = null; // { key, params } shown under the input
+const REPLAY_STEP_MS = 500; // time from one move to the next at 1×
+const REPLAY_SLIDE_MS = 280; // slide time per move at 1×
+const REPLAY_SPEEDS = [0.5, 1, 2, 4];
+
+let replay = null; // { moves, text, index, playing, timer } while a route is loaded
+let replaySpeed = 1;
+let replayError = null; // { key, params } when the pasted route can't be loaded
 
 // Accepts any separators ("b1 a3", "b1-a3", "b1, a3"); a leading b1 is optional.
 function parseRoute(text) {
@@ -312,69 +323,128 @@ function parseRoute(text) {
     return squares;
 }
 
-// Checks the pasted route, then plays it from b1. An illegal move shows a
-// message saying which one.
-function startReplay() {
+// Loads the route in the text box and puts the board back on b1. Returns
+// false, with a message saying why, if the route is empty or has an illegal move.
+function loadRoute() {
+    unloadReplay();
     const moves = parseRoute(el.replayInput.value);
-    if (moves.length === 0) return showReplayMessage("replay.empty");
-
-    for (let i = 1; i <= moves.length; i++) {
-        if (!simulate(moves.slice(0, i)).valid) {
-            return showReplayMessage("replay.invalid", { n: i, square: moves[i - 1] });
+    if (moves.length === 0) {
+        replayError = { key: "replay.empty", params: {} };
+    } else {
+        for (let i = 1; i <= moves.length; i++) {
+            if (!simulate(moves.slice(0, i)).valid) {
+                replayError = { key: "replay.invalid", params: { n: i, square: moves[i - 1] } };
+                break;
+            }
         }
     }
+    if (replayError) {
+        updateReplayUI();
+        return false;
+    }
 
+    replay = { moves, text: el.replayInput.value, index: 0, playing: false, timer: 0 };
     finishAnimation();
     setHistory([START_SQUARE]);
-    replay = { moves, index: 0, timer: 0 };
-    replayStep();
+    return true;
 }
 
-function replayStep() {
-    finishAnimation(); // land the previous move
-    const { moves } = replay;
-
-    if (replay.index === moves.length) {
-        replay = null;
-        return showReplayMessage("replay.done", { score: state.score, total: moves.length });
-    }
-
-    const square = moves[replay.index++];
-    showReplayMessage("replay.progress", { n: replay.index, total: moves.length });
-    animateMove(toPos(square), REPLAY_SLIDE_MS);
-    replay.timer = setTimeout(replayStep, REPLAY_STEP_MS);
-}
-
-// Stops a playing replay, keeping the moves made so far, and clears its message.
-function stopReplay() {
-    if (replay) {
-        clearTimeout(replay.timer);
-        replay = null;
-        finishAnimation();
-    }
-    showReplayMessage(null);
-}
-
-function showReplayMessage(key, params = {}) {
-    replayMessage = key ? { key, params } : null;
+// Drops the loaded route, e.g. when the player makes a move of their own.
+function unloadReplay() {
+    if (replay) clearTimeout(replay.timer);
+    replay = null;
+    replayError = null;
     updateReplayUI();
 }
 
-function updateReplayUI() {
-    el.replayIcon.textContent = replay ? "stop" : "play_arrow";
-    el.replayLabel.textContent = t(replay ? "replay.stop" : "replay.play");
-    el.replayStatus.textContent = replayMessage ? t(replayMessage.key, replayMessage.params) : "";
+function play() {
+    // A new or edited route in the box is loaded first.
+    if (!replay || replay.text !== el.replayInput.value) {
+        if (!loadRoute()) return;
+    }
+    if (replay.index === replay.moves.length) goTo(0);
+    replay.playing = true;
+    tick();
 }
 
-el.replayBtn.addEventListener("click", () => (replay ? stopReplay() : startReplay()));
+function pause() {
+    if (!replay) return;
+    clearTimeout(replay.timer);
+    replay.playing = false;
+    updateReplayUI();
+}
+
+function tick() {
+    finishAnimation(); // land the previous move
+    if (replay.index === replay.moves.length) return pause();
+    slideForward();
+    replay.timer = setTimeout(tick, REPLAY_STEP_MS / replaySpeed);
+}
+
+function slideForward() {
+    finishAnimation();
+    if (replay.index === replay.moves.length) return;
+    const square = replay.moves[replay.index++];
+    animateMove(toPos(square), REPLAY_SLIDE_MS / replaySpeed);
+    updateReplayUI();
+}
+
+// Jumps straight to the position after `index` moves, without sliding.
+function goTo(index) {
+    finishAnimation();
+    replay.index = Math.max(0, Math.min(index, replay.moves.length));
+    setHistory([START_SQUARE, ...replay.moves.slice(0, replay.index)]);
+}
+
+function updateReplayUI() {
+    const loaded = replay !== null;
+    const index = loaded ? replay.index : 0;
+    const total = loaded ? replay.moves.length : 0;
+    const playing = loaded && replay.playing;
+
+    el.replayStart.disabled = el.replayBack.disabled = !loaded || index === 0;
+    el.replayForward.disabled = el.replayEnd.disabled = !loaded || index === total;
+
+    el.replayPlayIcon.textContent = playing ? "pause" : "play_arrow";
+    setLabel(el.replayPlay, playing ? "replay.pause" : "replay.play");
+    setLabel(el.replayStart, "replay.start");
+    setLabel(el.replayBack, "replay.back");
+    setLabel(el.replayForward, "replay.forward");
+    setLabel(el.replayEnd, "replay.end");
+    setLabel(el.replaySpeed, "replay.speed");
+    el.replaySpeed.textContent = replaySpeed + "×";
+
+    el.replayStatus.textContent = replayError ? t(replayError.key, replayError.params)
+        : !loaded ? ""
+        : index === total && !isAnimating ? t("replay.done", { score: state.score, total })
+        : t("replay.progress", { n: index, total });
+}
+
+function setLabel(button, key) {
+    button.title = t(key);
+    button.setAttribute("aria-label", t(key));
+}
+
+el.replayPlay.addEventListener("click", () => (replay?.playing ? pause() : play()));
+el.replayStart.addEventListener("click", () => { pause(); goTo(0); });
+el.replayEnd.addEventListener("click", () => { pause(); goTo(replay.moves.length); });
+el.replayBack.addEventListener("click", () => { pause(); goTo(replay.index - 1); });
+el.replayForward.addEventListener("click", () => { pause(); slideForward(); });
+
+el.replaySpeed.addEventListener("click", () => {
+    replaySpeed = REPLAY_SPEEDS[(REPLAY_SPEEDS.indexOf(replaySpeed) + 1) % REPLAY_SPEEDS.length];
+    updateReplayUI(); // a playing replay picks the new speed up from its next move
+});
 
 el.replayInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
         event.preventDefault();
-        stopReplay();
-        startReplay();
+        if (loadRoute()) play();
     }
 });
+
+// Pasting a route plays it straight away.
+el.replayInput.addEventListener("paste", () => setTimeout(() => loadRoute() && play()));
 
 // Ctrl/Cmd+Z undoes a move, unless the player is typing.
 document.addEventListener("keydown", (event) => {
@@ -424,7 +494,5 @@ helpDialog.addEventListener("click", (event) => {
 });
 
 onLanguageChange(updateUI);
-onLanguageChange(updateReplayUI);
 updateUI();
-updateReplayUI();
 render();

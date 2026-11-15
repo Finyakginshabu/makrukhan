@@ -100,7 +100,7 @@
     .btn,
     .icon-btn,
     .segmented,
-    .field input,
+    .name-input,
     .replay-input {
         corner-shape: squircle;
     }
@@ -392,15 +392,68 @@ h1 {
     line-height: 1.4;
 }
 
+/* ---------- Toolbar ----------
+   Wide:   language, theme, name, help.
+   Narrow: ☰, name, help; language and theme drop down from ☰.
+   The switch depends on the toolbar's own width, so the narrow desktop panel
+   folds up too, not just phones. */
+
 .toolbar {
     grid-area: toolbar;
+    container: toolbar / inline-size;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.toolbar .btn {
-    margin-left: auto;
+.prefs {
+    position: relative;
+    flex: none;
+}
+
+.prefs-btn {
+    display: none;
+}
+
+.prefs-menu {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.name-input {
+    flex: 1 1 auto;
+    width: 0; /* grow from nothing, so the input never forces the row wider */
+    height: var(--control-h);
+    padding-block: 0;
+}
+
+.toolbar > .btn {
+    flex: none;
+}
+
+@container toolbar (max-width: 429px) {
+    .prefs-btn {
+        display: inline-grid;
+    }
+
+    .prefs-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        z-index: 20;
+        display: none;
+        padding: 8px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-color: var(--edge-hi) var(--edge-lo);
+        border-radius: var(--radius-btn);
+        box-shadow: var(--glow), var(--shadow-card);
+    }
+
+    .prefs.open .prefs-menu {
+        display: flex;
+    }
 }
 
 .board-wrap {
@@ -437,7 +490,8 @@ h1 {
 
 @media (min-width: 600px) {
     .app {
-        grid-template-columns: minmax(0, 1fr) auto;
+        /* The toolbar needs a set width: it picks its layout from that width. */
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         grid-template-areas:
             "brand toolbar"
             "board board"
@@ -739,13 +793,7 @@ h1 {
     }
 }
 
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.field input,
+.name-input,
 .replay-input {
     font: inherit;
     font-size: 16px;
@@ -758,14 +806,14 @@ h1 {
     box-shadow: var(--glow);
 }
 
-.field input::placeholder,
+.name-input::placeholder,
 .replay-input::placeholder {
     color: var(--text-muted);
     opacity: 0.8;
 }
 
 /* No outer ring; focus shows as a coloured border instead. */
-.field input:focus,
+.name-input:focus,
 .replay-input:focus {
     outline: none;
     border-color: var(--brand);

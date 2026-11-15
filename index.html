@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap">
     <!-- Icons: Material Symbols, only the ones used (names must stay in alphabetical order). -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=check,chevron_left,chevron_right,close,content_copy,dark_mode,light_mode,pause,play_arrow,restart_alt,send,skip_next,skip_previous,undo&display=block">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=check,chevron_left,chevron_right,close,content_copy,dark_mode,light_mode,menu,pause,play_arrow,restart_alt,send,skip_next,skip_previous,undo&display=block">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -35,15 +35,27 @@
             </div>
         </header>
 
+        <!-- When the toolbar is narrow, language and theme fold into a menu
+             behind the ☰ button (see "Toolbar" in css/style.css). -->
         <div class="toolbar">
-            <div class="segmented" role="group" data-i18n-aria-label="lang.label">
-                <button type="button" data-lang="th">ไทย</button>
-                <button type="button" data-lang="en">EN</button>
+            <div class="prefs">
+                <button type="button" id="prefs-btn" class="icon-btn prefs-btn" aria-expanded="false"
+                    aria-controls="prefs-menu" data-i18n-aria-label="prefs.label">
+                    <span class="icon" aria-hidden="true">menu</span>
+                </button>
+                <div id="prefs-menu" class="prefs-menu">
+                    <div class="segmented" role="group" data-i18n-aria-label="lang.label">
+                        <button type="button" data-lang="th">ไทย</button>
+                        <button type="button" data-lang="en">EN</button>
+                    </div>
+                    <button type="button" id="theme-toggle" class="icon-btn">
+                        <span class="icon icon-moon" aria-hidden="true">dark_mode</span>
+                        <span class="icon icon-sun" aria-hidden="true">light_mode</span>
+                    </button>
+                </div>
             </div>
-            <button type="button" id="theme-toggle" class="icon-btn">
-                <span class="icon icon-moon" aria-hidden="true">dark_mode</span>
-                <span class="icon icon-sun" aria-hidden="true">light_mode</span>
-            </button>
+            <input type="text" id="nameInput" class="name-input" maxlength="50" autocomplete="nickname"
+                data-i18n-placeholder="name.label" data-i18n-aria-label="name.label">
             <button type="button" id="help-btn" class="btn fixed-label" data-i18n-fixed="help.open">How to play?</button>
         </div>
 
@@ -114,11 +126,6 @@
             </section>
 
             <footer class="panel-footer">
-                <label class="field">
-                    <span class="label" data-i18n="name.label"></span>
-                    <input type="text" id="nameInput" maxlength="50" autocomplete="nickname"
-                        data-i18n-placeholder="name.placeholder">
-                </label>
                 <!-- In the panel on desktop; a bar fixed to the bottom of the screen on phones and tablets. -->
                 <div class="action-bar">
                     <button type="button" id="undo-btn" class="btn">

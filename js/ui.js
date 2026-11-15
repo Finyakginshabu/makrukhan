@@ -7,6 +7,7 @@ const I18N = {
         "title": "อัศวินห่านห้าวหาญนักล่าแต้ม",
         "tagline": "เริ่มที่ช่อง b1 เก็บแต้มให้ได้มากที่สุด แล้วไปจบที่ช่องบ่อน้ำที่สิ้นสุด",
         "lang.label": "ภาษา",
+        "prefs.label": "ภาษาและธีม",
         "theme.toDark": "เปลี่ยนเป็นโหมดมืด",
         "theme.toLight": "เปลี่ยนเป็นโหมดสว่าง",
         "help.open": "เล่นยังไง?",
@@ -39,7 +40,6 @@ const I18N = {
         "replay.done": "จบแล้ว: ได้ {score} แต้มใน {total} ตา",
 
         "name.label": "มีนามว่า",
-        "name.placeholder": "คนโง่จะเว้นว่าง",
         "undo": "ย้อนกลับ",
         "reset": "เริ่มใหม่",
         "send": "อันนี้ล่ะ",
@@ -79,6 +79,7 @@ const I18N = {
         "title": "Makrukhan",
         "tagline": "Start on b1, collect as many points as you can, and finish on a Final Pond.",
         "lang.label": "Language",
+        "prefs.label": "Language and theme",
         "theme.toDark": "Switch to dark mode",
         "theme.toLight": "Switch to light mode",
         "help.open": "How to play?",
@@ -111,7 +112,6 @@ const I18N = {
         "replay.done": "Finished: {score} points in {total} moves.",
 
         "name.label": "Name",
-        "name.placeholder": "Only fools leave this blank",
         "undo": "Undo",
         "reset": "Reset",
         "send": "This one!",
@@ -226,6 +226,29 @@ themeButton.addEventListener("click", () => {
 
 document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+});
+
+// ---------- ☰ menu (language and theme on a narrow toolbar) ----------
+
+const prefs = document.querySelector(".prefs");
+const prefsButton = document.getElementById("prefs-btn");
+
+function setPrefsOpen(open) {
+    prefs.classList.toggle("open", open);
+    prefsButton.setAttribute("aria-expanded", String(open));
+}
+
+prefsButton.addEventListener("click", () => setPrefsOpen(!prefs.classList.contains("open")));
+
+// Closes on a click or tap anywhere outside it, or on Escape.
+document.addEventListener("pointerdown", (event) => {
+    if (!prefs.contains(event.target)) setPrefsOpen(false);
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && prefs.classList.contains("open")) {
+        setPrefsOpen(false);
+        prefsButton.focus();
+    }
 });
 
 applyTranslations();

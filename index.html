@@ -35,28 +35,27 @@
             </div>
         </header>
 
-        <!-- When the toolbar is narrow, language and theme fold into a menu
-             behind the ☰ button (see "Toolbar" in css/style.css). -->
+        <!-- Wide: language, theme, name, help in one row. Narrow: name and ☰;
+             ☰ swaps the name for language, theme and help (see "Toolbar" in
+             css/style.css). -->
         <div class="toolbar">
-            <div class="prefs">
-                <button type="button" id="prefs-btn" class="icon-btn prefs-btn" aria-expanded="false"
-                    aria-controls="prefs-menu" data-i18n-aria-label="prefs.label">
-                    <span class="icon" aria-hidden="true">menu</span>
-                </button>
-                <div id="prefs-menu" class="prefs-menu">
-                    <div class="segmented" role="group" data-i18n-aria-label="lang.label">
-                        <button type="button" data-lang="th">ไทย</button>
-                        <button type="button" data-lang="en">EN</button>
-                    </div>
-                    <button type="button" id="theme-toggle" class="icon-btn">
-                        <span class="icon icon-moon" aria-hidden="true">dark_mode</span>
-                        <span class="icon icon-sun" aria-hidden="true">light_mode</span>
-                    </button>
-                </div>
-            </div>
             <input type="text" id="nameInput" class="name-input" maxlength="50" autocomplete="nickname"
                 data-i18n-placeholder="name.label" data-i18n-aria-label="name.label">
-            <button type="button" id="help-btn" class="btn fixed-label" data-i18n-fixed="help.open">How to play?</button>
+            <div id="prefs-menu" class="prefs-menu">
+                <div class="segmented" role="group" data-i18n-aria-label="lang.label">
+                    <button type="button" data-lang="th">ไทย</button>
+                    <button type="button" data-lang="en">EN</button>
+                </div>
+                <button type="button" id="theme-toggle" class="icon-btn">
+                    <span class="icon icon-moon" aria-hidden="true">dark_mode</span>
+                    <span class="icon icon-sun" aria-hidden="true">light_mode</span>
+                </button>
+                <button type="button" id="help-btn" class="btn fixed-label" data-i18n-fixed="help.open">How to play?</button>
+            </div>
+            <button type="button" id="prefs-btn" class="icon-btn prefs-btn" aria-expanded="false"
+                aria-controls="prefs-menu" data-i18n-aria-label="prefs.label">
+                <span id="prefs-icon" class="icon" aria-hidden="true">menu</span>
+            </button>
         </div>
 
         <div class="board-wrap">

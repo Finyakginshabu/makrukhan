@@ -228,24 +228,27 @@ document.querySelectorAll("[data-lang]").forEach(btn => {
     btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
 });
 
-// ---------- ☰ menu (language and theme on a narrow toolbar) ----------
+// ---------- ☰ menu (narrow toolbar) ----------
+// Opening it swaps the name field for language, theme and help (css/style.css).
 
-const prefs = document.querySelector(".prefs");
+const toolbar = document.querySelector(".toolbar");
 const prefsButton = document.getElementById("prefs-btn");
+const prefsIcon = document.getElementById("prefs-icon");
 
 function setPrefsOpen(open) {
-    prefs.classList.toggle("open", open);
+    toolbar.classList.toggle("menu-open", open);
     prefsButton.setAttribute("aria-expanded", String(open));
+    prefsIcon.textContent = open ? "close" : "menu";
 }
 
-prefsButton.addEventListener("click", () => setPrefsOpen(!prefs.classList.contains("open")));
+prefsButton.addEventListener("click", () => setPrefsOpen(!toolbar.classList.contains("menu-open")));
 
-// Closes on a click or tap anywhere outside it, or on Escape.
+// Closes on a click or tap outside the toolbar, or on Escape.
 document.addEventListener("pointerdown", (event) => {
-    if (!prefs.contains(event.target)) setPrefsOpen(false);
+    if (!toolbar.contains(event.target)) setPrefsOpen(false);
 });
 document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && prefs.classList.contains("open")) {
+    if (event.key === "Escape" && toolbar.classList.contains("menu-open")) {
         setPrefsOpen(false);
         prefsButton.focus();
     }

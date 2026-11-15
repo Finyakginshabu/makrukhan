@@ -393,29 +393,15 @@ h1 {
 }
 
 /* ---------- Toolbar ----------
-   Wide:   language, theme, name, help.
-   Narrow: ☰, name, help; language and theme drop down from ☰.
+   Wide:   language, theme, name, help, all in one row.
+   Narrow: name and ☰. Opening ☰ swaps the name, in place, for language,
+           theme and help, and ☰ turns into ✕.
    The switch depends on the toolbar's own width, so the narrow desktop panel
-   folds up too, not just phones. */
+   gets the narrow layout too, not just phones. */
 
 .toolbar {
     grid-area: toolbar;
     container: toolbar / inline-size;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.prefs {
-    position: relative;
-    flex: none;
-}
-
-.prefs-btn {
-    display: none;
-}
-
-.prefs-menu {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -428,9 +414,22 @@ h1 {
     padding-block: 0;
 }
 
-.toolbar > .btn {
+.prefs-btn {
+    display: none;
     flex: none;
 }
+
+.prefs-menu .btn {
+    flex: none;
+}
+
+/* Wide: the menu's items join the toolbar row directly, around the name. */
+.prefs-menu {
+    display: contents;
+}
+
+.prefs-menu .segmented { order: -2; }
+#theme-toggle { order: -1; }
 
 @container toolbar (max-width: 429px) {
     .prefs-btn {
@@ -438,21 +437,24 @@ h1 {
     }
 
     .prefs-menu {
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
-        z-index: 20;
         display: none;
-        padding: 8px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-color: var(--edge-hi) var(--edge-lo);
-        border-radius: var(--radius-btn);
-        box-shadow: var(--glow), var(--shadow-card);
     }
 
-    .prefs.open .prefs-menu {
+    .toolbar.menu-open .name-input {
+        display: none;
+    }
+
+    .toolbar.menu-open .prefs-menu {
         display: flex;
+        flex: 1 1 auto;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    /* Help sits next to ✕, language and theme stay on the left. */
+    .prefs-menu .btn {
+        margin-left: auto;
     }
 }
 

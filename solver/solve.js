@@ -196,26 +196,41 @@ class Entries { // every game kept, with a parent link for the route
 
 // ---------- Search ----------
 
-function search(width, seed) {
+// Options:
+//   prefix     moves already played (after b1); the search continues from there
+//   maxStates  give up (returns { aborted: true }) once this many states are stored
+//   quiet      no per-move log
+//   target     a state key; the search then looks for the highest score at
+//              that state instead of at a Final Pond, collecting no item that
+//              the target's mask doesn't hold
+function search(width, seed, { prefix = [], maxStates = Infinity, quiet = false, target = -1 } = {}) {
+    // Items outside the target's mask count as already used: never collected,
+    // and left out of the upper bound.
+    const ALL_ITEMS = 2 ** (T_COUNT + B_COUNT) - 1;
+    const blocked = target >= 0 ? ALL_ITEMS - Math.floor(target / 256) : 0;
     const t0 = Date.now();
     const seen = new Table(20); // best score per state over committed layers
     const layer = new Table(16); // state -> entry index within the layer being built
     const E = new Entries();
 
-    const startKey = sqIndex(R.START_SQUARE) * 4;
-    seen.set(startKey, 0);
-    let cur = [E.push(startKey, 0, -1)];
-    let best = -1, bestFrom = -1, bestTo = -1, bestDepth = 0;
+    const start = R.simulate(prefix);
+    let startMask = 0;
+    for (const s of start.visited) startMask |= 1 << ITEM_BIT[sqIndex(s)];
+    const startKey = startMask * 256 + sqIndex(start.current) * 4 + start.shields;
+    seen.set(startKey, start.score);
+    let cur = [E.push(startKey, start.score, -1)];
+    let best = -1, bestFrom = -1, bestTo = -1;
     const limit = () => (best >= seed ? best + 1 : seed); // score a game must still be able to reach
 
     for (let depth = 1; cur.length; depth++) {
+        if (seen.size > maxStates) return { aborted: true, seconds: secs(t0) };
         layer.clear();
         const next = [];
 
         for (const e of cur) {
             const key = E.key[e], score0 = E.score[e];
             const sh0 = key % 4, from = Math.floor(key / 4) % 64, mask0 = Math.floor(key / 256);
-            if (bound(score0, mask0) < limit()) continue;
+            if (bound(score0, mask0 | blocked) < limit()) continue;
 
             for (const to of MOVES[from]) {
                 // Same steps, in the same order, as GameRules.simulate.
@@ -225,19 +240,21 @@ function search(width, seed) {
                 if (SHIELD[to]) sh = SHIELD[to];
                 const bit = ITEM_BIT[to];
                 if (bit >= 0 && ((mask >>> bit) & 1) === 0) {
+                    if ((blocked >>> bit) & 1) continue;
                     if (bit >= T_COUNT) score *= BLESSING[to];
                     else score += TREASURE[to] * MULT[from];
                     mask |= 1 << bit;
                 }
                 score = Math.round(score);
 
-                if (END[to]) {
-                    if (score > best) { best = score; bestFrom = e; bestTo = to; bestDepth = depth; }
+                const k = mask * 256 + to * 4 + sh;
+                if (target >= 0 ? k === target : END[to]) {
+                    if (score > best) { best = score; bestFrom = e; bestTo = to; }
                     continue;
                 }
-                if (bound(score, mask) < limit()) continue;
+                if (END[to]) continue; // a pond ends the game short of the target
+                if (bound(score, mask | blocked) < limit()) continue;
 
-                const k = mask * 256 + to * 4 + sh;
                 if (seen.get(k) >= score) continue;
                 const i = layer.get(k);
                 if (i >= 0) {
@@ -259,16 +276,75 @@ function search(width, seed) {
         for (const n of next) seen.set(E.key[n], E.score[n]);
         cur = next;
 
-        if (width === Infinity) {
+        if (width === Infinity && !quiet) {
             const mb = Math.round(process.memoryUsage().rss / 1048576);
             console.log(`  move ${depth}: ${next.length} games, ${seen.size} states, best ${best}, ${secs(t0)}s, ${mb} MB`);
         }
     }
 
     if (best < 0) return null;
-    const route = [sqName(bestTo)];
-    for (let e = bestFrom; e !== -1; e = E.parent[e]) route.unshift(sqName(Math.floor(E.key[e] / 4) % 64));
-    return { score: best, moves: bestDepth, route, seconds: secs(t0) };
+    const tail = [sqName(bestTo)];
+    for (let e = bestFrom; E.parent[e] !== -1; e = E.parent[e]) tail.unshift(sqName(Math.floor(E.key[e] / 4) % 64));
+    const route = [R.START_SQUARE, ...prefix, ...tail];
+    return { score: best, moves: route.length - 1, route, seconds: secs(t0) };
+}
+
+// Keeps the first k moves of the route and replaces the rest with the best
+// possible ending, found by the exact search. Starts near the end (few items
+// left, so the search is small) and moves k earlier while the search still
+// fits under maxStates. Any improvement becomes the new route.
+function polish(result, maxStates) {
+    const t0 = Date.now();
+    let current = result;
+    for (let k = current.moves - 1; k >= 0; k--) {
+        const prefix = current.route.slice(1, k + 1);
+        const r = search(Infinity, current.score, { prefix, maxStates, quiet: true });
+        if (r?.aborted) {
+            console.log(`  from move ${k}: too big (over ${maxStates} states), stopping`);
+            break;
+        }
+        if (r && r.score > current.score) {
+            console.log(`  from move ${k}: ${current.score} -> ${r.score} (${r.seconds}s)`);
+            current = r;
+        } else if (k % 5 === 0) {
+            console.log(`  from move ${k}: no better ending (${r?.seconds ?? 0}s)`);
+        }
+    }
+    return { ...current, seconds: secs(t0) };
+}
+
+// For each point k in the route, finds the highest score that reaches the same
+// state as the route's move k (square, armour, items used) and swaps that in
+// as the opening. The rest of the route then scores at least as much.
+function polishOpening(result, maxStates, from = 4) {
+    const t0 = Date.now();
+    let current = result;
+    for (let k = from; k < current.moves; k++) {
+        const prefix = current.route.slice(1, k + 1);
+        const state = R.simulate(prefix);
+        if (state.ended) break;
+        let mask = 0;
+        for (const s of state.visited) mask |= 1 << ITEM_BIT[sqIndex(s)];
+        const target = mask * 256 + sqIndex(state.current) * 4 + state.shields;
+
+        const r = search(Infinity, state.score, { target, maxStates, quiet: true });
+        if (r?.aborted) {
+            console.log(`  up to move ${k}: too big (over ${maxStates} states), stopping`);
+            break;
+        }
+        if (r && r.score > state.score) {
+            const candidate = [...r.route, ...current.route.slice(k + 1)];
+            const check = R.simulate(candidate.slice(1));
+            if (check.valid && check.ended && check.score > current.score) {
+                console.log(`  up to move ${k}: ${state.score} -> ${r.score} there, final ${current.score} -> ${check.score} (${r.seconds}s)`);
+                current = { score: check.score, moves: candidate.length - 1, route: candidate };
+                k = r.route.length - 1; // carry on from the end of the new opening
+            }
+        } else if (k % 5 === 0) {
+            console.log(`  up to move ${k}: no better opening (${r?.seconds ?? 0}s)`);
+        }
+    }
+    return { ...current, seconds: secs(t0) };
 }
 
 // Hill-climbs a finished route with small edits: cut out a stretch, put one or
@@ -336,7 +412,17 @@ const width = opt("--beam", 20000);
 
 const beam = search(width, 0);
 report(`Beam search (width ${width})`, beam);
-if (beam) report("After route edits", improve(beam));
+const edited = beam && improve(beam);
+if (edited) report("After route edits", edited);
+
+if (args.includes("--polish")) {
+    const maxStates = opt("--max-states", 20e6);
+    console.log("Exact openings:");
+    const opened = polishOpening(edited, maxStates);
+    report("Exact openings", opened);
+    console.log("Exact endings:");
+    report("Exact endings", polish(opened, maxStates));
+}
 
 if (args.includes("--exact")) {
     console.log("Exact search:");

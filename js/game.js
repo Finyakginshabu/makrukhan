@@ -30,6 +30,11 @@ const el = {
     name: document.getElementById("nameInput"),
     send: document.getElementById("send-btn"),
     sendStatus: document.getElementById("send-status"),
+    replayInput: document.getElementById("replay-input"),
+    replayBtn: document.getElementById("replay-btn"),
+    replayIcon: document.getElementById("replay-icon"),
+    replayLabel: document.getElementById("replay-label"),
+    replayStatus: document.getElementById("replay-status"),
 };
 
 const PIECE_SRC = {
@@ -149,14 +154,14 @@ function makeMove(pos) {
     setHistory([...history, toSquare(pos)]);
 }
 
-function animateMove(target) {
+function animateMove(target, duration = ANIMATION_MS) {
     isAnimating = true;
     const from = knightPos();
     let startTime = null;
 
     function step(timestamp) {
         if (startTime === null) startTime = timestamp;
-        const linear = Math.min((timestamp - startTime) / ANIMATION_MS, 1);
+        const linear = Math.min((timestamp - startTime) / duration, 1);
 
         if (linear < 1) {
             const progress = 1 - (1 - linear) ** 3; // ease-out: fast start, soft landing
@@ -237,6 +242,7 @@ function pointerSquare(event) {
 
 canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    stopReplay(); // the player takes over from a replay where it is
     finishAnimation(); // a new tap lands the previous move first
 
     const pos = pointerSquare(event);
@@ -277,6 +283,7 @@ canvas.addEventListener("pointercancel", () => {
 // ---------- Buttons ----------
 
 function undo() {
+    stopReplay();
     finishAnimation();
     if (history.length === 1) return;
     setHistory(history.slice(0, -1));
@@ -285,8 +292,88 @@ function undo() {
 el.undo.addEventListener("click", undo);
 
 el.reset.addEventListener("click", () => {
+    stopReplay();
     finishAnimation();
     setHistory([START_SQUARE]);
+});
+
+// ---------- Replay a pasted route ----------
+
+const REPLAY_SLIDE_MS = 280; // slide time per move
+const REPLAY_STEP_MS = 500; // time from one move to the next
+
+let replay = null; // { moves, index, timer } while a route is playing
+let replayMessage = null; // { key, params } shown under the input
+
+// Accepts any separators ("b1 a3", "b1-a3", "b1, a3"); a leading b1 is optional.
+function parseRoute(text) {
+    const squares = text.toLowerCase().match(/[a-h][1-8]/g) || [];
+    if (squares[0] === START_SQUARE) squares.shift();
+    return squares;
+}
+
+// Checks the pasted route, then plays it from b1. An illegal move shows a
+// message saying which one.
+function startReplay() {
+    const moves = parseRoute(el.replayInput.value);
+    if (moves.length === 0) return showReplayMessage("replay.empty");
+
+    for (let i = 1; i <= moves.length; i++) {
+        if (!simulate(moves.slice(0, i)).valid) {
+            return showReplayMessage("replay.invalid", { n: i, square: moves[i - 1] });
+        }
+    }
+
+    finishAnimation();
+    setHistory([START_SQUARE]);
+    replay = { moves, index: 0, timer: 0 };
+    replayStep();
+}
+
+function replayStep() {
+    finishAnimation(); // land the previous move
+    const { moves } = replay;
+
+    if (replay.index === moves.length) {
+        replay = null;
+        return showReplayMessage("replay.done", { score: state.score, total: moves.length });
+    }
+
+    const square = moves[replay.index++];
+    showReplayMessage("replay.progress", { n: replay.index, total: moves.length });
+    animateMove(toPos(square), REPLAY_SLIDE_MS);
+    replay.timer = setTimeout(replayStep, REPLAY_STEP_MS);
+}
+
+// Stops a playing replay, keeping the moves made so far, and clears its message.
+function stopReplay() {
+    if (replay) {
+        clearTimeout(replay.timer);
+        replay = null;
+        finishAnimation();
+    }
+    showReplayMessage(null);
+}
+
+function showReplayMessage(key, params = {}) {
+    replayMessage = key ? { key, params } : null;
+    updateReplayUI();
+}
+
+function updateReplayUI() {
+    el.replayIcon.textContent = replay ? "stop" : "play_arrow";
+    el.replayLabel.textContent = t(replay ? "replay.stop" : "replay.play");
+    el.replayStatus.textContent = replayMessage ? t(replayMessage.key, replayMessage.params) : "";
+}
+
+el.replayBtn.addEventListener("click", () => (replay ? stopReplay() : startReplay()));
+
+el.replayInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        stopReplay();
+        startReplay();
+    }
 });
 
 // Ctrl/Cmd+Z undoes a move, unless the player is typing.
@@ -337,5 +424,7 @@ helpDialog.addEventListener("click", (event) => {
 });
 
 onLanguageChange(updateUI);
+onLanguageChange(updateReplayUI);
 updateUI();
+updateReplayUI();
 render();

@@ -100,7 +100,8 @@
     .btn,
     .icon-btn,
     .segmented,
-    .field input {
+    .field input,
+    .replay-row input {
         corner-shape: squircle;
     }
 }
@@ -725,7 +726,8 @@ h1 {
     gap: 4px;
 }
 
-.field input {
+.field input,
+.replay-row input {
     font: inherit;
     font-size: 16px;
     padding: 8px 12px;
@@ -737,15 +739,33 @@ h1 {
     box-shadow: var(--glow);
 }
 
-.field input::placeholder {
+.field input::placeholder,
+.replay-row input::placeholder {
     color: var(--text-muted);
     opacity: 0.8;
 }
 
 /* No outer ring; focus shows as a coloured border instead. */
-.field input:focus {
+.field input:focus,
+.replay-row input:focus {
     outline: none;
     border-color: var(--brand);
+}
+
+.replay-row {
+    display: flex;
+    gap: 8px;
+}
+
+.replay-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--mono);
+    font-size: 14px;
+}
+
+.replay-row .btn {
+    flex: none;
 }
 
 .send-status {

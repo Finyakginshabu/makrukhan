@@ -754,6 +754,12 @@ h1 {
     grid-column: 1 / -1;
 }
 
+/* Undo, Reset and "This one!" share the same height as the other controls. */
+.action-bar .btn {
+    height: var(--control-h);
+    padding-block: 0;
+}
+
 /* Phones and tablets: the three buttons become a bar fixed to the bottom of
    the screen, always in reach while playing. */
 @media (max-width: 919px) {
@@ -869,6 +875,11 @@ h1 {
 .replay-controls .replay-speed {
     font-size: 14px;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* One line, always: long messages are cut with "…" rather than wrapping. */

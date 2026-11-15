@@ -347,7 +347,7 @@ el.copy.addEventListener("click", async () => {
 
 const REPLAY_STEP_MS = 800; // time from one move to the next at 1×
 const REPLAY_SLIDE_MS = 280; // slide time per move at 1×
-const REPLAY_SPEEDS = [0.5, 1, 2];
+const REPLAY_SPEEDS = [0.67, 1, 2, 4];
 
 let replay = null; // { moves, text, index, playing, timer } while a route is loaded
 let replaySpeed = 1;
@@ -439,6 +439,8 @@ function updateReplayUI() {
     const total = loaded ? replay.moves.length : 0;
     const playing = loaded && replay.playing;
 
+    // Play loads the route from the box, so it needs something in the box (or a running replay to pause).
+    el.replayPlay.disabled = !playing && el.replayInput.value.trim() === "";
     el.replayStart.disabled = el.replayBack.disabled = !loaded || index === 0;
     el.replayForward.disabled = el.replayEnd.disabled = !loaded || index === total;
 
@@ -482,6 +484,7 @@ el.replayInput.addEventListener("keydown", (event) => {
 
 // Pasting a route loads it, ready to play or step through.
 el.replayInput.addEventListener("paste", () => setTimeout(loadRoute));
+el.replayInput.addEventListener("input", updateReplayUI);
 
 // Ctrl/Cmd+Z undoes a move, unless the player is typing.
 document.addEventListener("keydown", (event) => {
